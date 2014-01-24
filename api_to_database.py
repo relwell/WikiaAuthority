@@ -290,14 +290,13 @@ all_revisions = dict(all_revisions)
 
 title_top_authors = {}
 
-print map(get_contributing_authors, [(title_obj, all_revisions[title_obj['title']]) for title_obj in all_titles[:10]])
-
 r = pool.map_async(get_contributing_authors,
                    [(title_obj, all_revisions[title_obj['title']]) for title_obj in all_titles[:10]],
                    callback=title_top_authors.update)
 r.wait()
 
 print title_top_authors
+sys.exit()
 
 centralities = author_centrality(title_top_authors)
 
