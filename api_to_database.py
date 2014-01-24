@@ -4,21 +4,34 @@ from pygraph.classes.digraph import digraph
 from pygraph.algorithms.pagerank import pagerank
 import requests
 import sys
-import multiprocessing
+from multiprocessing import Process as OldProcess
+from multiprocessing.pool import Pool as OldPool
 import argparse
 
-try:
-    default_cpus = multiprocessing.cpu_count()
-except NotImplementedError:
-    default_cpus = 2   # arbitrary default
+
+class NoDaemonProcess(OldProcess):
+    # make 'daemon' attribute always return False
+    def _get_daemon(self):
+        return False
+
+    def _set_daemon(self, value):
+        pass
+
+    daemon = property(_get_daemon, _set_daemon)
+
+
+class Pool(OldPool):
+    Process = NoDaemonProcess
 
 parser = argparse.ArgumentParser(description='Get authoritativeness data for a given wiki.')
 parser.add_argument('--wiki-id', dest='wiki_id', action='store', required=True,
                     help='The ID of the wiki you want to operate on')
-parser.add_argument('--processes', dest='processes', action='store', type=int, default=default_cpus,
+parser.add_argument('--processes', dest='processes', action='store', type=int, default=2,
                     help='Number of processes you want to run at once')
 parser.add_argument('--test-run', dest='test_run', action='store_true', default=False,
                     help='Test run (fewer computations)')
+parser.add_argument('--smoothing', dest='smoothing', action='store', type=float, default=0.01,
+                    help="Smooths out zeros in cases where we don't have enough data, but don't want 0 (e.g. quality)")
 options = parser.parse_args()
 
 edit_distance_memoization_cache = {}
@@ -74,6 +87,10 @@ def get_all_revisions(title_object, rvstartid=None):
     return [title_string, revisions]
 
 
+def apply_edit_distance(tuple_args):
+    return apply(edit_distance, tuple_args)
+
+
 def edit_distance(title_object, earlier_revision, later_revision):
     global api_url, edit_distance_memoization_cache
     if (later_revision, earlier_revision) in edit_distance_memoization_cache:
@@ -117,15 +134,28 @@ def edit_distance(title_object, earlier_revision, later_revision):
     return 0
 
 
-def edit_quality(title_object, revision_i, revision_j):
-    numerator = (edit_distance(title_object, revision_i['parentid'], revision_j['revid'])
-                 - edit_distance(title_object, revision_i['revid'], revision_j['revid']))
+def apply_edit_quality(arg_tuple):
+    return apply(edit_quality, arg_tuple)
 
-    denominator = edit_distance(title_object, revision_i['parentid'], revision_i['revid'])
+
+def edit_quality(title_object, revision_i, revision_j):
+    eqpool = Pool(processes=2)
+    mr = eqpool.map_async(apply_edit_distance, [(title_object, revision_i['parentid'], revision_j['revid']),
+                                                (title_object, revision_i['revid'], revision_j['revid']),
+                                                (title_object, revision_i['parentid'], revision_i['revid'])])
+    mr.wait()
+    distances = mr.get()
+    numerator = distances[0] - distances[1]
+    denominator = distances[2]
 
     val = numerator if denominator == 0 or numerator == 0 else numerator / denominator
 
     return -1 if val < 0 else 1  # must be one of[-1, 1]
+
+
+def smoothing_constant():
+    global options
+    return options.smoothing
 
 
 def get_contributing_authors(arg_tuple):
@@ -141,10 +171,20 @@ def get_contributing_authors(arg_tuple):
 
             otherrevs = [title_revs[j] for j in range(i+1, len(title_revs[i+1:i+11]))]
             non_author_revs = filter(lambda x: x.get('user', '') != curr_rev.get('user', ''), otherrevs)
-            avg_edit_qty = (sum([edit_quality(title_object, curr_rev, otherrev) for otherrev in non_author_revs])
+
+            non_author_qualities = []
+            if len(non_author_revs) > 0:
+                local_pool = Pool(processes=2)
+                rm = local_pool.map_async(apply_edit_quality,
+                                          [(title_object, curr_rev, otherrev) for otherrev in non_author_revs])
+                dist = edit_distance(title_object, prev_rev['revid'], curr_rev['revid'])
+                rm.wait()
+                non_author_qualities = rm.get()
+
+            avg_edit_qty = (sum(non_author_qualities)
                             / max(1, len(set([non_author_rev.get('user', '') for non_author_rev in non_author_revs]))))
-            curr_rev['edit_longevity'] = (avg_edit_qty
-                                          * edit_distance(title_object, prev_rev['revid'], curr_rev['revid']))
+            avg_edit_qty = avg_edit_qty if avg_edit_qty != 0 else smoothing_constant()
+            curr_rev['edit_longevity'] = (avg_edit_qty * dist)
 
         authors = filter(lambda x: x['userid'] != 0 and x['user'] != '',
                          dict([(title_rev.get('userid', 0),
@@ -192,12 +232,16 @@ def links_for_page(title_object, plcontinue=None):
     return title_string, links
 
 
+"""
+broken but on the bright side we're not using it
 def get_pagerank(titles):
     global options
-    pool = multiprocessing.Pool(processes=options.processes)
-    all_links = pool.map(links_for_page, titles)
+    pool = Pool(processes=options.processes)
+    all_links = {}
+    r = pool.map_async(links_for_page, titles, callback=all_links.update)
+    r.wait()
     all_title_strings = list(set([to_string for response in all_links for to_string in response[1]]
-                                 + [obj['title'] for obj in all_titles]))
+                                 + [obj['title'] for obj in titles]))
 
     wiki_graph = digraph()
     wiki_graph.add_nodes(all_title_strings)  # to prevent missing node_neighbors table
@@ -205,6 +249,7 @@ def get_pagerank(titles):
         [(title_object['title'], target) for title_object in all_titles for target in links_for_page(title_object)[1]])
 
     return pagerank(wiki_graph)
+"""
 
 
 def author_centrality(titles_to_authors):
@@ -235,20 +280,24 @@ api_url = '%sapi.php' % wiki_data['url']
 all_titles = get_all_titles()
 print "Got %d titles" % len(all_titles)
 
-pool = multiprocessing.Pool(processes=options.processes)
+pool = Pool(processes=options.processes)
 
 all_revisions = []
-r = pool.map_async(get_all_revisions, all_titles, callback=all_revisions.extend)
+r = pool.map_async(get_all_revisions, all_titles[:10], callback=all_revisions.extend)
 r.wait()
 print "%d Revisions" % sum([len(revs) for title, revs in all_revisions])
 all_revisions = dict(all_revisions)
 
 title_top_authors = {}
 
+print map(get_contributing_authors, [(title_obj, all_revisions[title_obj['title']]) for title_obj in all_titles[:10]])
+
 r = pool.map_async(get_contributing_authors,
-                   [(title_obj, all_revisions[title_obj['title']]) for title_obj in all_titles],
+                   [(title_obj, all_revisions[title_obj['title']]) for title_obj in all_titles[:10]],
                    callback=title_top_authors.update)
 r.wait()
+
+print title_top_authors
 
 centralities = author_centrality(title_top_authors)
 
