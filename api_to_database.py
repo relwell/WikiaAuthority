@@ -295,9 +295,6 @@ r = pool.map_async(get_contributing_authors,
                    callback=title_top_authors.update)
 r.wait()
 
-print title_top_authors
-sys.exit()
-
 centralities = author_centrality(title_top_authors)
 
 centrality_scaler = MinMaxScaler(centralities.values())
