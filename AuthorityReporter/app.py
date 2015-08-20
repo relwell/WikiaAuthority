@@ -12,11 +12,34 @@ from nlp_services.caching import use_caching
 from library import api
 from wikia_dstk.authority import add_db_arguments
 from AuthorityReporter.library.models import TopicModel, WikiModel, PageModel, UserModel
+from celery import Celery
+from wikia_authority.tasks import *
+
+
+def bootstrap_celery(app):
+    celery = Celery(app.import_name, broker=app.config['CELERY_BROKER_URL'])
+    celery.conf.update(app.config)
+    TaskBase = celery.Task
+    class ContextTask(TaskBase):
+        abstract = True
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return TaskBase.__call__(self, *args, **kwargs)
+    celery.Task = ContextTask
+    return celery
 
 
 use_caching()
 
 app = Flask(__name__)
+app.config.from_object('AuthorityReporter.default_settings')
+try:
+    app.config.from_envvar('AUTHORITY_REPORTER_SETTINGS')
+except RuntimeError:  # env var wasn't set
+    pass
+
+celery = bootstrap_celery(app)
+
 args = None
 
 

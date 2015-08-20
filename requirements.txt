@@ -10,6 +10,7 @@ corenlp-xml==0.0.1
 cssselect==0.9.1
 Flask==0.10.1
 Flask-RESTful==0.2.11
+Flask-Script==2.0.5
 gensim==0.12.1
 itsdangerous==0.23
 Jinja2==2.7.2
@@ -27,6 +28,7 @@ Pyro4==4.39
 python-graph-core==1.8.2
 pytz==2013.9
 PyYAML==3.10
+redis==2.10.3
 requests==2.1.0
 scikit-learn==0.16.1
 scipy==0.16.0

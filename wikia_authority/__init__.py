@@ -1,3 +1,7 @@
+from . import tasks
+from celery import Celery
+
+
 class MinMaxScaler:
     """
     Scales values from 0 to 1 by default
@@ -12,3 +16,5 @@ class MinMaxScaler:
     def scale(self, val):
         return (((self.enforced_max - self.enforced_min) * (val - self.min))
                 / (self.max - self.min)) + self.enforced_min
+
+
