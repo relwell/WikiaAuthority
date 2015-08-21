@@ -1,7 +1,14 @@
-from celery import shared_task
+from celery import group, shared_task
+from AuthorityReporter.app import app
 import requests
 import traceback
 import redis
+import time
+from lxml import html
+from lxml.etree import ParserError
+from pygraph.classes.digraph import digraph
+from pygraph.algorithms.pagerank import pagerank
+from pygraph.classes.exceptions import AdditionError
 
 
 @shared_task
@@ -39,7 +46,7 @@ def links_for_page(title, api_url):
 
 
 @shared_task
-def get_contributing_authors(wiki_id, title_object, title_revs,
+def get_contributing_authors(wiki_id, title_object, title_revs, api_url,
                              minimum_authors=5,
                              minimum_contribution_pct=0.05,
                              smoothing=0.05):
@@ -52,6 +59,8 @@ def get_contributing_authors(wiki_id, title_object, title_revs,
     :type title_object: dict
     :param title_revs: a list of revision dicts
     :type title_revs: list
+    :param api_url: the api URL for the wiki we're working with
+    :type api_url: str
     :param minimum_authors: the minimum number of authors we should retrieve
     :type minimum_authors: int
     :param minimum_contribution_pct: authors with a contribution percentage less than this will be ignored
@@ -71,12 +80,13 @@ def get_contributing_authors(wiki_id, title_object, title_revs,
     if len(title_revs) == 1 and u'user' in title_revs[0]:
         return doc_id, []
 
-    """
-    I should break this into a celery task so we can
-    paralellize requests to the mediawiki API.
-    It should return the edit longevity for each revision.
-    Then we should add that value to each revision.
-    """
+    # this initializes edit distance keys in redis
+    for j in range(1, len(title_revs)):
+        group(
+            edit_distance.s(wiki_id, title_object, title_revs[i-1][u'revid'], title_revs[i][u'revid'], api_url)
+            for i in range(j, len(title_revs))
+        ).get()
+
     for i in range(0, len(title_revs)):
         curr_rev = title_revs[i]
         if i == 0:
@@ -86,7 +96,7 @@ def get_contributing_authors(wiki_id, title_object, title_revs,
             if u'revid' not in curr_rev or u'revid' not in prev_rev:
                 continue
 
-            edit_dist = edit_distance(title_object, prev_rev[u'revid'], curr_rev[u'revid'])
+            edit_dist = edit_distance(wiki_id, title_object, prev_rev[u'revid'], curr_rev[u'revid'], api_url)
 
         non_author_revs_comps = [(title_revs[j-1], title_revs[j]) for j in range(i+1, len(title_revs[i+1:i+11]))
                                  if title_revs[j].get(u'user', u'') != curr_rev.get(u'user')]
@@ -125,16 +135,54 @@ def get_contributing_authors(wiki_id, title_object, title_revs,
     return doc_id, top_authors
 
 
+def edit_quality(title_object, revision_i, revision_j):
+    """
+    Calculates the edit quality of a title for two revisions
+
+    :param title_object: the title object from the mw api
+    :type title_object: dict
+    :param revision_i: a given revision for that title
+    :type revision_i: dict
+    :param revision_j: another comparable revision for that title
+    :type revision_j: dict
+
+    :return: an integer value of -1 or 1
+    :rtype: int
+    """
+
+    numerator = (edit_distance(title_object, revision_i[u'parentid'], revision_j[u'revid'])
+                 - edit_distance(title_object, revision_i[u'revid'], revision_j[u'revid']))
+
+    denominator = edit_distance(title_object, revision_i[u'parentid'], revision_i[u'revid'])
+
+    val = numerator if denominator == 0 or numerator == 0 else numerator / denominator
+    return -1 if val < 0 else 1  # must be one of[-1, 1]
+
+
+
 @shared_task
-def edit_distance(title_object, earlier_revision, later_revision, already_retried=False):
+def edit_distance(wiki_id, title_object, earlier_revision, later_revision, api_url):
+    """
+    Returns edit distance for two revisions and a title for a given wiki ID
 
-    # replace edit distance memoization cache with redis since we're gonna use redis
-    global api_url, edit_distance_memoization_cache
+    :param title_object: the title object we've already retrieved from the API
+    :type title_object: dict
+    :param earlier_revision: the first revision we care about, could be str or int, i forget
+    :type earlier_revision: str
+    :param later_revision: the second revision we care about, could be str or int, i forget
+    :type later_revision: int
+    :param api_url: the url we're hitting for this wiki
+    :type api_url: str
 
-    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    :return: the edit distance between the two reivsions expressed as a float
+    :rtype: float
+    """
+    r = redis.StrictRedis(host=app.config['REDIS_HOST'], port=app.config['REDIS_PORT'], db=app.config['REDIS_DB'])
+    key = "%s_%s_%s_%s" % (wiki_id, title_object[u'page_id'], str(earlier_revision), str(later_revision))
+    result = r.get(key)
+    if result is not None:
+        return result
 
-    if (earlier_revision, later_revision) in edit_distance_memoization_cache:
-        return edit_distance_memoization_cache[(earlier_revision, later_revision)]
     params = {u'action': u'query',
               u'prop': u'revisions',
               u'rvprop': u'ids|user|userid',
@@ -144,15 +192,7 @@ def edit_distance(title_object, earlier_revision, later_revision, already_retrie
               u'rvdiffto': later_revision,
               u'titles': title_object[u'title']}
 
-    try:
-        resp = requests.get(api_url, params=params)
-    except requests.exceptions.ConnectionError as e:
-        if already_retried:
-            print u"Gave up on some socket shit", e
-            return 0
-        print u"Fucking sockets"
-        time.sleep(240)  # wait four minutes for your wimpy ass sockets to get their shit together
-        return edit_distance(title_object, earlier_revision, later_revision, already_retried=True)
+    resp = requests.get(api_url, params=params)
 
     try:
         response = resp.json()
@@ -183,8 +223,8 @@ def edit_distance(title_object, earlier_revision, later_revision, already_retrie
             if changes > 0:
                 moves /= changes
             distance = max([adds, deletes]) - 0.5 * min([adds, deletes]) + moves
-            edit_distance_memoization_cache[(earlier_revision, later_revision)] = distance
-            return distance
+            redis.set(key, distance)
+
         except (TypeError, ParserError, UnicodeEncodeError):
-            return 0
-    return 0
+            pass
+    return distance

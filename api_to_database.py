@@ -5,7 +5,6 @@ from pygraph.classes.digraph import digraph
 from pygraph.algorithms.pagerank import pagerank
 from pygraph.classes.exceptions import AdditionError
 from wikia_authority import MinMaxScaler
-from celery import shared_task
 import traceback
 import json
 import requests
