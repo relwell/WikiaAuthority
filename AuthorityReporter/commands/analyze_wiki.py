@@ -1,5 +1,5 @@
 from flask.ext.script import Command, Option
-from wikia_authority import tasks
+from AuthorityReporter.tasks.etl import etl
 
 
 class AnalyzeWiki(Command):
@@ -19,4 +19,4 @@ class AnalyzeWiki(Command):
         :type wiki_id: str
         :return:
         """
-        print tasks.test.s(wiki_id).apply_async().get()
+        print etl(wiki_id)

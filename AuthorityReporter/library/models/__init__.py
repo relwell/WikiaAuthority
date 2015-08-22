@@ -3,6 +3,7 @@ from collections import OrderedDict
 from multiprocessing import Pool
 import requests
 import xlwt
+from AuthorityReporter import MinMaxScaler
 from collections import defaultdict
 from nlp_services.caching import use_caching
 from nlp_services.pooling import set_global_num_processes
@@ -838,38 +839,3 @@ GROUP BY wikis.wiki_id ORDER BY total_authority DESC LIMIT %d OFFSET %d;
         self.cursor.execute(u'SELECT * FROM users WHERE user_name = "%s"' % self.db.escape_string(self.user_name))
         row = self.cursor.fetchone()
         return dict(user_id=row[0], user_name=row[1], total_authority=row[2])
-
-
-class MinMaxScaler:
-    """
-    Scales values from 0 to 1 by default
-    """
-
-    def __init__(self, vals, enforced_min=0, enforced_max=1):
-        """
-        Init method
-
-        :param vals: an array of integer values
-        :type vals: list
-        :param enforced_min: the minimum value in the scaling (default 0)
-        :type enforced_min: float
-        :param enforced_max: the maximum value in the scaling (default 1)
-        :type enforced_max: float
-        """
-        self.min = float(min(vals))
-        self.max = float(max(vals))
-        self.enforced_min = float(enforced_min)
-        self.enforced_max = float(enforced_max)
-
-    def scale(self, val):
-        """
-        Returns the scaled version of the value
-
-        :param val: the value you want to scale
-        :type val: float
-
-        :return: the scaled version of that value
-        :rtype: float
-        """
-        return (((self.enforced_max - self.enforced_min) * (float(val) - self.min))
-                / (self.max - self.min)) + self.enforced_min

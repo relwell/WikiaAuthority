@@ -13,10 +13,20 @@ from library import api
 from wikia_dstk.authority import add_db_arguments
 from AuthorityReporter.library.models import TopicModel, WikiModel, PageModel, UserModel
 from celery import Celery
-from wikia_authority.tasks import *
 
 
 def bootstrap_celery(app):
+    """
+    Registers celery with the app
+
+    :param app: the flask app
+
+    :return: the Celery context
+    """
+
+    # importing here because some tasks refer to app, lol
+    from AuthorityReporter.tasks.etl import links_for_page, get_contributing_authors, edit_distance, get_all_revisions
+    from AuthorityReporter.tasks.etl import get_title_top_authors, set_page_key
     celery = Celery(app.import_name, broker=app.config['CELERY_BROKER_URL'])
     celery.conf.update(app.config)
     TaskBase = celery.Task

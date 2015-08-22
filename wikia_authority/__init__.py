@@ -1,5 +1,4 @@
 from . import tasks
-from celery import Celery
 
 
 class MinMaxScaler:
