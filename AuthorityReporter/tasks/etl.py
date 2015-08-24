@@ -351,6 +351,7 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
     :rtype: dict
     """
 
+    print "Initializing edit distance data"
     for title_obj in all_titles:
         print title_obj
         # this initializes edit distance keys in redis
@@ -361,12 +362,15 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
                 for i in range(j, len(title_revs))
             )().get()
 
+    print "Getting contributing authors for titles"
     title_to_authors = group(get_contributing_authors.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
                              for title_obj in all_titles)().get()
 
     contribs_scaler = MinMaxScaler([author[u'contribs']
                                     for title in title_to_authors
                                     for author in title_to_authors[title]])
+
+    print "Scaling top authors"
     scaled_title_top_authors = {}
     for title, authors in title_to_authors:
         new_authors = []
@@ -422,6 +426,7 @@ def etl(wiki_id):
 
     print time.time() - start
 
+    print "Calculating Centrality"
     centralities = author_centrality(title_top_authors)
 
     # this com_qscore_pr, the best metric per Qin and Cunningham
