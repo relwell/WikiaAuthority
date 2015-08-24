@@ -146,15 +146,11 @@ def edit_quality(wiki_id, api_url, title_object, revision_i, revision_j):
     :rtype: int
     """
 
-    numerator_a = edit_distance.apply_async((wiki_id, api_url, title_object, revision_i[u'parentid'], revision_j[u'revid']))
-    numerator_b = edit_distance.apply_async((wiki_id, api_url, title_object, revision_i[u'revid'], revision_j[u'revid']))
-    denominator = edit_distance.apply_async((wiki_id, api_url, title_object, revision_i[u'parentid'], revision_i[u'revid']))
-
-    numerator_a = float(numerator_a.get())
-    numerator_b = float(numerator_b.get())
+    numerator_a = edit_distance(wiki_id, api_url, title_object, revision_i[u'parentid'], revision_j[u'revid'])
+    numerator_b = edit_distance(wiki_id, api_url, title_object, revision_i[u'revid'], revision_j[u'revid'])
+    denominator = edit_distance(wiki_id, api_url, title_object, revision_i[u'parentid'], revision_i[u'revid'])
 
     numerator = (numerator_a - numerator_b)
-    denominator = float(denominator.get())
 
     val = numerator if denominator == 0 or numerator == 0 else numerator / denominator
     return -1 if val < 0 else 1  # must be one of[-1, 1]
