@@ -146,9 +146,9 @@ def edit_quality(wiki_id, api_url, title_object, revision_i, revision_j):
     :rtype: int
     """
 
-    numerator_a = edit_distance.s(wiki_id, api_url, title_object, revision_i[u'parentid'], revision_j[u'revid'])
-    numerator_b = edit_distance.s(wiki_id, api_url, title_object, revision_i[u'revid'], revision_j[u'revid'])
-    denominator = edit_distance.s(wiki_id, api_url, title_object, revision_i[u'parentid'], revision_i[u'revid'])
+    numerator_a = edit_distance.apply_async((wiki_id, api_url, title_object, revision_i[u'parentid'], revision_j[u'revid']))
+    numerator_b = edit_distance.apply_async((wiki_id, api_url, title_object, revision_i[u'revid'], revision_j[u'revid']))
+    denominator = edit_distance.apply_async((wiki_id, api_url, title_object, revision_i[u'parentid'], revision_i[u'revid']))
 
     numerator = (numerator_a.get() - numerator_b.get())
     denominator = denominator.get()
