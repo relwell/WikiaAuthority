@@ -362,10 +362,8 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
     title_to_authors = group(get_contributing_authors.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
                              for title_obj in all_titles)().get()
 
-    print title_to_authors
-
     contribs_scaler = MinMaxScaler([author[u'contribs']
-                                    for title in title_to_authors
+                                    for (page_id, [title]) in title_to_authors
                                     for author in title_to_authors[title]])
 
     print "Scaling top authors"
