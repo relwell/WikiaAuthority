@@ -44,7 +44,7 @@ use_caching()
 app = Flask(__name__)
 app.config.from_object('AuthorityReporter.default_settings')
 try:
-    app.config.from_envvar('AUTHORITY_REPORTER_SETTINGS')
+    app.config.from_pyfile('/etc/authority/settings.py')
 except RuntimeError:  # env var wasn't set
     pass
 
