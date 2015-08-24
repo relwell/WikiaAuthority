@@ -181,6 +181,7 @@ def edit_distance(wiki_id, api_url, title_object, earlier_revision, later_revisi
     print key
     result = r.get(key)
     if result is not None:
+        print 'distance is', result
         return result
 
     params = {u'action': u'query',
@@ -228,6 +229,8 @@ def edit_distance(wiki_id, api_url, title_object, earlier_revision, later_revisi
 
         except (TypeError, ParserError, UnicodeEncodeError):
             pass
+
+    print 'distance is', distance
     return distance
 
 
