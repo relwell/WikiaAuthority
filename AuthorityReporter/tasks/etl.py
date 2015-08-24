@@ -79,13 +79,6 @@ def get_contributing_authors(wiki_id, api_url, title_object, title_revs):
     if len(title_revs) == 1 and u'user' in title_revs[0]:
         return doc_id, []
 
-    # this initializes edit distance keys in redis
-    for j in range(1, len(title_revs)):
-        group(
-            edit_distance.s(wiki_id, title_object, title_revs[i-1][u'revid'], title_revs[i][u'revid'], api_url)
-            for i in range(j, len(title_revs))
-        )().get()
-
     for i in range(0, len(title_revs)):
         curr_rev = title_revs[i]
         if i == 0:
@@ -95,12 +88,12 @@ def get_contributing_authors(wiki_id, api_url, title_object, title_revs):
             if u'revid' not in curr_rev or u'revid' not in prev_rev:
                 continue
 
-            edit_dist = edit_distance(wiki_id, title_object, prev_rev[u'revid'], curr_rev[u'revid'], api_url)
+            edit_dist = edit_distance(wiki_id, api_url, title_object, prev_rev[u'revid'], curr_rev[u'revid'])
 
         non_author_revs_comps = [(title_revs[j-1], title_revs[j]) for j in range(i+1, len(title_revs[i+1:i+11]))
                                  if title_revs[j].get(u'user', u'') != curr_rev.get(u'user')]
 
-        avg_edit_qty = (sum(map(lambda x: edit_quality(title_object, x[0], x[1]), non_author_revs_comps))
+        avg_edit_qty = (sum(map(lambda x: edit_quality(wiki_id, api_url, title_object, x[0], x[1]), non_author_revs_comps))
                         / max(1, len(set([non_author_rev_cmp[1].get(u'user', u'') for non_author_rev_cmp in
                                           non_author_revs_comps]))))
         avg_edit_qty += app.config['ETL_SMOOTHING']
@@ -134,10 +127,14 @@ def get_contributing_authors(wiki_id, api_url, title_object, title_revs):
     return doc_id, top_authors
 
 
-def edit_quality(title_object, revision_i, revision_j):
+def edit_quality(wiki_id, api_url, title_object, revision_i, revision_j):
     """
     Calculates the edit quality of a title for two revisions
 
+    :param wiki_id: the integer ID for the wiki
+    :type wiki_id: int
+    :param api_url: the api URL for the wiki we're working with
+    :type api_url: str
     :param title_object: the title object from the mw api
     :type title_object: dict
     :param revision_i: a given revision for that title
@@ -149,34 +146,39 @@ def edit_quality(title_object, revision_i, revision_j):
     :rtype: int
     """
 
-    numerator = (edit_distance(title_object, revision_i[u'parentid'], revision_j[u'revid'])
-                 - edit_distance(title_object, revision_i[u'revid'], revision_j[u'revid']))
+    numerator_a = edit_distance.s(wiki_id, api_url, title_object, revision_i[u'parentid'], revision_j[u'revid'])
+    numerator_b = edit_distance.s(wiki_id, api_url, title_object, revision_i[u'revid'], revision_j[u'revid'])
+    denominator = edit_distance.s(wiki_id, api_url, title_object, revision_i[u'parentid'], revision_i[u'revid'])
 
-    denominator = edit_distance(title_object, revision_i[u'parentid'], revision_i[u'revid'])
+    numerator = (numerator_a.get() - numerator_b.get())
+    denominator = denominator.get()
 
     val = numerator if denominator == 0 or numerator == 0 else numerator / denominator
     return -1 if val < 0 else 1  # must be one of[-1, 1]
 
 
 @shared_task
-def edit_distance(wiki_id, title_object, earlier_revision, later_revision, api_url):
+def edit_distance(wiki_id, api_url, title_object, earlier_revision, later_revision):
     """
     Returns edit distance for two revisions and a title for a given wiki ID
 
+    :param wiki_id: the integer ID for the wiki
+    :type wiki_id: int
+    :param api_url: the api URL for the wiki we're working with
+    :type api_url: str
     :param title_object: the title object we've already retrieved from the API
     :type title_object: dict
     :param earlier_revision: the first revision we care about, could be str or int, i forget
     :type earlier_revision: str
     :param later_revision: the second revision we care about, could be str or int, i forget
     :type later_revision: int
-    :param api_url: the url we're hitting for this wiki
-    :type api_url: str
 
     :return: the edit distance between the two reivsions expressed as a float
     :rtype: float
     """
     r = redis.StrictRedis(host=app.config['REDIS_HOST'], port=app.config['REDIS_PORT'], db=app.config['REDIS_DB'])
-    key = "%s_%s_%s_%s" % (wiki_id, title_object[u'page_id'], str(earlier_revision), str(later_revision))
+    key = "%s_%s_%s_%s" % (wiki_id, title_object[u'pageid'], str(earlier_revision), str(later_revision))
+    print key
     result = r.get(key)
     if result is not None:
         return result
@@ -205,6 +207,7 @@ def edit_distance(wiki_id, title_object, earlier_revision, later_revision, api_u
                         .get(unicode(title_object[u'pageid']), {})
                         .get(u'revisions', [{}])[0])
     revision[u'adds'], revision[u'deletes'], revision[u'moves'] = 0, 0, 0
+    distance = 0
     if (u'diff' in revision and u'*' in revision[u'diff']
        and revision[u'diff'][u'*'] != '' and revision[u'diff'][u'*'] is not False
        and revision[u'diff'][u'*'] is not None):
@@ -221,7 +224,7 @@ def edit_distance(wiki_id, title_object, earlier_revision, later_revision, api_u
             if changes > 0:
                 moves /= changes
             distance = max([adds, deletes]) - 0.5 * min([adds, deletes]) + moves
-            redis.set(key, distance)
+            r.set(key, distance)
 
         except (TypeError, ParserError, UnicodeEncodeError):
             pass
@@ -326,7 +329,6 @@ def get_all_revisions(api_url, title_object):
     return [title_string, revisions]
 
 
-@shared_task
 def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
     """
     Creates a dictionary of titles and its top authors
@@ -342,6 +344,17 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
     :return: a dict keying title to top authors
     :rtype: dict
     """
+
+    for title_obj in all_titles:
+        print title_obj
+        # this initializes edit distance keys in redis
+        title_revs = all_revisions[title_obj[u'title']]
+        for j in range(1, len(title_revs)):
+            group(
+                edit_distance.s(wiki_id, api_url, title_obj, title_revs[i-1][u'revid'], title_revs[i][u'revid'])
+                for i in range(j, len(title_revs))
+            )().get()
+
     title_to_authors = group(get_contributing_authors.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
                              for title_obj in all_titles)().get()
 
@@ -358,7 +371,7 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
     return scaled_title_top_authors
 
 
-@shared_task
+@shared_task(ignore_result=True)
 def set_page_key(x):
     bucket = connect_s3().get_bucket(u'nlp-data')
     k = bucket.new_key(key_name=u'/service_responses/%s/PageAuthorityService.get' % (x[0].replace(u'_', u'/')))

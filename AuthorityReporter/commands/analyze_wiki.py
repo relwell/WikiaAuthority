@@ -19,4 +19,4 @@ class AnalyzeWiki(Command):
         :type wiki_id: str
         :return:
         """
-        print etl(wiki_id)
+        etl(wiki_id)
