@@ -447,7 +447,7 @@ def etl(wiki_id):
     key = bucket.new_key(key_name=u'service_responses/%s/WikiAuthorityService.get' % wiki_id)
     key.set_contents_from_string(json.dumps(comqscore_authority, ensure_ascii=False))
 
-    set_page_key.delay(x) for x in title_top_authors.items()
+    map(set_page_key.delay, title_top_authors.items())
 
     print wiki_id, u"finished in", time.time() - start, u"seconds"
 
