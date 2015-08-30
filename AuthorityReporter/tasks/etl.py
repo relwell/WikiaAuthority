@@ -5,7 +5,7 @@ This is all of the tasks related to running an ETL for authority
 from boto import connect_s3
 from celery import group, shared_task
 from AuthorityReporter.app import app
-from AuthorityReporter import MinMaxScaler
+from AuthorityReporter.library import MinMaxScaler
 import requests
 import traceback
 import redis
