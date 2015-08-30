@@ -11,7 +11,7 @@ def connection():
 
 
 def collection_for_wiki(wiki_id):
-    return connection()[wiki_id]
+    return connection()[str(wiki_id)]
 
 
 def global_collection():
