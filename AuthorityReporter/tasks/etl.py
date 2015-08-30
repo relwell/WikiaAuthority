@@ -13,7 +13,7 @@ import time
 import json
 from lxml import html
 from lxml.etree import ParserError
-from pygraph.classes.digraph import digraph
+from .classes.digraph import digraph
 from pygraph.algorithms.pagerank import pagerank
 from pygraph.classes.exceptions import AdditionError
 
@@ -331,6 +331,15 @@ def get_all_revisions(api_url, title_object):
     return [title_string, revisions]
 
 
+@shared_task
+def prime_edit_distance(wiki_id, api_url, title_obj, title_revs):
+    return group(
+        edit_distance.s(wiki_id, api_url, title_obj, title_revs[i-1][u'revid'], title_revs[i][u'revid'])
+        for j in range(1, len(title_revs))
+        for i in range(j, len(title_revs))
+    )()
+
+
 def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
     """
     Creates a dictionary of titles and its top authors
@@ -348,19 +357,9 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
     """
 
     print "Initializing edit distance data"
-    all_results = []
-    for title_obj in all_titles:
-        print title_obj
-        # this initializes edit distance keys in redis
-        title_revs = all_revisions[title_obj[u'title']]
-        for j in range(1, len(title_revs)):
-            all_results.append(group(
-                edit_distance.s(wiki_id, api_url, title_obj, title_revs[i-1][u'revid'], title_revs[i][u'revid'])
-                for i in range(j, len(title_revs))
-            )())
 
-    # block until complete
-    map(lambda x: x.get(), all_results)
+    group(prime_edit_distance.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
+          for title_obj in all_titles)().get()
 
     print "Getting contributing authors for titles"
     title_to_authors = group(get_contributing_authors.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
