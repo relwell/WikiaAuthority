@@ -76,6 +76,12 @@ def ingest_data(wiki_id):
     wiki_data = items[wiki_id]
 
     collection = collection_for_wiki(wiki_id)
+    exists = False
+    try:
+        exists = collection.exists()
+    except KeyError:
+        pass
+
     if not collection.exists():
         collection.create()
 
