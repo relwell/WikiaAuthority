@@ -13,7 +13,7 @@ import time
 import json
 from lxml import html
 from lxml.etree import ParserError
-from .classes.digraph import digraph
+from pygraph.classes.digraph import digraph
 from pygraph.algorithms.pagerank import pagerank
 from pygraph.classes.exceptions import AdditionError
 
