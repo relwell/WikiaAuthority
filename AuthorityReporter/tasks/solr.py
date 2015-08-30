@@ -82,7 +82,7 @@ def ingest_data(wiki_id):
     except KeyError:
         pass
 
-    if not collection.exists():
+    if not exists:
         collection.create()
 
     use_caching(is_read_only=True, shouldnt_compute=True)
