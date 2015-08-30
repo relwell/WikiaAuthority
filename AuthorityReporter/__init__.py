@@ -1,3 +1,5 @@
+import app
+
 class MinMaxScaler:
     """
     Scales values from 0 to 1 by default

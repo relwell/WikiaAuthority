@@ -1,14 +1,13 @@
 from solrcloudpy import SolrConnection, SearchOptions
-from AuthorityReporter import app
 from copy import deepcopy
-from datetime import datetime
+import AuthorityReporter
 
 
 DEFAULT_DOCSIZE = 50
 
 
 def connection():
-    return SolrConnection(app.config['SOLR_HOSTS'])
+    return SolrConnection(AuthorityReporter.app.app.config['SOLR_HOSTS'])
 
 
 def collection_for_wiki(wiki_id):
