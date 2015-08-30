@@ -180,7 +180,6 @@ def edit_distance(wiki_id, api_url, title_object, earlier_revision, later_revisi
     print key
     result = r.get(key)
     if result is not None:
-        print 'distance is', result
         return float(result)
 
     params = {u'action': u'query',
@@ -229,7 +228,6 @@ def edit_distance(wiki_id, api_url, title_object, earlier_revision, later_revisi
         except (TypeError, ParserError, UnicodeEncodeError):
             pass
 
-    print 'distance is', distance
     return float(distance)
 
 
@@ -358,8 +356,11 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
 
     print "Initializing edit distance data"
 
-    group(prime_edit_distance.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
-          for title_obj in all_titles)().get()
+    all_title_len = len(all_titles)
+    for i in range(0, all_title_len, 100):
+        print "%d/%d" % (i, all_title_len)
+        group(prime_edit_distance.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
+              for title_obj in all_titles[i:i+100])().get()
 
     print "Getting contributing authors for titles"
     title_to_authors = group(get_contributing_authors.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
