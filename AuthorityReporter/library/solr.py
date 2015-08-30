@@ -1,5 +1,5 @@
 from solrcloudpy import SolrConnection, SearchOptions
-from AuthorityReporter.app import app
+from AuthorityReporter import app
 from copy import deepcopy
 from datetime import datetime
 
