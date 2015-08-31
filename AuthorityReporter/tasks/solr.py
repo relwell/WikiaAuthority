@@ -100,7 +100,7 @@ def ingest_data(wiki_id):
 
     grouped_futures = []
 
-    pages_to_authority = WikiAuthorityService().get_value(wiki_data['id'])
+    pages_to_authority = WikiAuthorityService().get_value(str(wiki_data['id']))
     for counter, (doc_id, entity_data) in enumerate(wpe.items()):
         documents.append({
             'id': doc_id,
@@ -129,7 +129,7 @@ def ingest_data(wiki_id):
     collection.commit()
 
     wiki_data['entities_txt'] = []
-    for count, entities in WikiEntitiesService().get_value(wiki_id):
+    for count, entities in WikiEntitiesService().get_value(str(wiki_id)):
         for entity in entities:
             map(wiki_data['entities_txt'].append, [entity] * count)
 
