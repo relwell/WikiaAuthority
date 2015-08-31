@@ -50,8 +50,8 @@ def add_with_metadata(wiki_data, docs):
                 'name_s': {'set': contrib['user']},
                 'contribs_f': {'set': contrib['contribs']},
                 'entities_txt': {'set': doc['entities_txt']},
-                'doc_authority_f': {'set': doc['authority_f']},
-                'user_page_authority_f': {'set': contrib['contribs'] * doc['authority_f']}
+                'doc_authority_f': {'set': doc['authority_f']['set']},
+                'user_page_authority_f': {'set': contrib['contribs'] * doc['authority_f']['set']}
             })
 
             doc['users_txt'] = {'set': users_txt}
