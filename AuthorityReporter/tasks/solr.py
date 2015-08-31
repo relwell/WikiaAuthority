@@ -59,8 +59,7 @@ def add_with_metadata(wiki_data, docs):
             doc['total_contribs_f'] = {'set': total_contribs_f}
 
     update_docs = list(docs) + list(author_pages)
-    print update_docs
-    #collection_for_wiki(wiki_data['id']).add(update_docs)
+    collection_for_wiki(wiki_data['id']).add(update_docs)
 
 
 def ingest_data(wiki_id):
