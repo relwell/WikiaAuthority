@@ -50,7 +50,8 @@ def add_with_metadata(wiki_data, docs):
                 'name_s': {'set': contrib['user']},
                 'contribs_f': {'set': contrib['contribs']},
                 'entities_txt': {'set': doc['entities_txt']},
-                'authority_f': {'set': doc['authority_f']}
+                'doc_authority_f': {'set': doc['authority_f']},
+                'user_page_authority_f': {'set': contrib['contribs'] * doc['authority_f']}
             })
 
             doc['users_txt'] = {'set': users_txt}
@@ -99,11 +100,13 @@ def ingest_data(wiki_id):
 
     grouped_futures = []
 
+    pages_to_authority = WikiAuthorityService().get_value(wiki_data['id'])
     for counter, (doc_id, entity_data) in enumerate(wpe.items()):
         documents.append({
             'id': doc_id,
             'entities_txt': {'set': list(set(entity_data.get(u'redirects', {}).values() + entity_data.get(u'titles')))},
-            'type_s': {'set': 'Page'}
+            'type_s': {'set': 'Page'},
+            'authority_f': {'set': pages_to_authority.get(doc_id, 0)}
         })
 
         if counter % 1500 == 0:
