@@ -1,7 +1,7 @@
 from celery import group, shared_task
 from nlp_services.caching import use_caching
 from nlp_services.authority import WikiAuthorityService, PageAuthorityService
-from nlp_services.discourse.entities import WikiPageToEntitiesService, WikiEntitiesService, CombinedWikiEntitiesService
+from nlp_services.discourse.entities import WikiPageToEntitiesService, WikiEntitiesService
 from itertools import izip_longest
 from AuthorityReporter.library.solr import collection_for_wiki, global_collection, get_all_docs_by_query
 from time import sleep
@@ -126,7 +126,7 @@ def ingest_data(wiki_id):
     collection.commit()
 
     wiki_data['entities_txt'] = []
-    for count, entities in CombinedWikiEntitiesService().get(wiki_id):
+    for count, entities in WikiEntitiesService().get_value(wiki_id):
         for entity in entities:
             map(wiki_data['entities_txt'].append, [entity] * count)
 
@@ -140,15 +140,12 @@ def ingest_data(wiki_id):
     wiki_data['user_ids_is'] = {'set': list(set(all_user_ids))}
     wiki_data['users_txt'] = {'set': list(set(all_users))}
 
+    wiki_collection = global_collection()
+    wiki_collection.add(wiki_data)
+    wiki_collection.commit()
+
+
     # next steps:
     # * Need to create User document for Wiki core by aggregating PageUsers
     # * Will need to create a separate task for creating global user documents I think
     #
-
-
-    wiki_collection = global_collection()
-
-    WikiEntitiesService.get()
-
-    wiki_collection.add(wiki_data)
-    wiki_collection.commit()
