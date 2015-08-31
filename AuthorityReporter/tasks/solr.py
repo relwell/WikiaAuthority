@@ -34,8 +34,11 @@ def add_with_metadata(wiki_data, docs):
         users_txt = []
         user_ids_is = []
         total_contribs_f = 0.0
-        contribs = pa.get(doc['id'])
-        for contrib in contribs:
+        pa_response = pa.get(doc['id'])
+        if pa_response['status'] != 200:
+            continue
+
+        for contrib in pa_response[doc['id']]:
             users_txt.append(contrib['user'])
             user_ids_is.append(contrib['userid'])
             total_contribs_f += contrib['contribs']
