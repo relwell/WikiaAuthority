@@ -14,8 +14,39 @@ def collection_for_wiki(wiki_id):
     return connection()[str(wiki_id)]
 
 
+def wiki_user_collection():
+    return connection()['wiki_users']
+
+
 def global_collection():
-    return connection()['ALL']
+    return connection()['wikis']
+
+
+def user_collection():
+    return connection()['users']
+
+
+def existing_collection(collection):
+    """
+    Reusable logic for creating a collection if needed
+
+    :param collection: SolrCollection
+    :type collection: SolrCollection
+
+    :return: the collection, created for sure
+    :rtype: SolrCollection
+    """
+
+    exists = False
+    try:
+        exists = collection.exists()
+    except KeyError:
+        pass
+
+    if not exists:
+        collection.create()
+
+    return collection
 
 
 def debug_requests():
@@ -184,3 +215,37 @@ def get_all_docs_by_query(collection, query, sort=None, fields=None):
         if not slice:
             return results
         page += 1
+
+
+def iterate_per_facetfield_value(collection, searchoptions, facetfield_value):
+    """
+    A generator for accessing facets
+
+    :param collection: the collection object from solrpy
+    :type collection: solrcloudpy.Collection
+    :param searchoptions: the options we are concerned with
+    :type searchoptions: solrcloudpy.SearchOptions
+    :param facetfield_value: the field we're faceting over
+    :type facetfield_value: str
+    :return: a string for each facet field
+    :rtype: str
+    """
+
+    searchoptions.facetparams.field(facetfield_value)
+    searchoptions.facetparams.limit(1000)
+    searchoptions.facetparams.mincount(1)
+    offset = 0
+    while True:
+        so = deepcopy(searchoptions)
+        so.facetparams.offset(offset)
+        results = collection.search(so)
+        try:
+            result_values = results.result['facet_counts']['facet_fields'][facetfield_value].dict.items()
+        except KeyError:
+            # will show "error" when we have asked for too many
+            return
+        for field_value, count in result_values:
+            yield field_value, count
+        if len(result_values) == 0:
+            break
+        offset += 1000
