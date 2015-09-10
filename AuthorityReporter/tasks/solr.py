@@ -67,12 +67,12 @@ def add_with_metadata(wiki_data, docs):
                 'name_txt_en': {'set': contrib['user']},
                 'name_s': {'set': contrib['user']},
                 'contribs_f': {'set': contrib['contribs']},
-                'entities_txt': {'set': doc['entities_txt']['set']},
+                'attr_entities': {'set': doc['attr_entities']['set']},
                 'doc_authority_f': {'set': doc['authority_f']['set']},
                 'user_page_authority_f': {'set': contrib['contribs'] * doc['authority_f']['set']}
             })
 
-            doc['users_txt'] = {'set': users_txt}
+            doc['attr_users'] = {'set': users_txt}
             doc['user_ids_is'] = {'set': user_ids_is}
             doc['total_contribs_f'] = {'set': total_contribs_f}
 
@@ -100,21 +100,23 @@ def build_wiki_user_doc(wiki_data, user_tuple):
         'id': '%d_%d' % (wiki_data['id'], user_id),
         'user_id_i': user_id,
         'wiki_id_i': wiki_data['id'],
+        'wiki_name_txt': wiki_data['title'],
         'name_s': {'set': user_name},
         'type_s': {'set': 'WikiUser'},
         'name_txt_en': {'set': user_name},
     }
     doc_ids = []
     entities = []
-    total_user_page_authority = 0
+    authorities = []
     for doc in solr.get_all_docs_by_query(collection, 'type_s:PageUser AND user_id_i:%d' % user_id):
         doc_ids.append(doc['doc_id_s'])
-        map(entities.append, doc['entities_txt'])
-        total_user_page_authority += doc['user_page_authority_f']
+        map(entities.append, doc['attr_entities'])
+        authorities.append(doc['user_page_authority_f'])
 
     user_doc['doc_ids_ss'] = {'set': doc_ids}
-    user_doc['entities_txt'] = entities
-    user_doc['total_page_authority_f'] = total_user_page_authority
+    user_doc['attr_entities'] = {'set': entities}
+    user_doc['total_page_authority_f'] = {'set': sum(authorities)}
+    user_doc['page_authority_fs'] = {'set': authorities}
 
     return user_doc
 
@@ -134,7 +136,14 @@ def ingest_data(wiki_id):
         print u"Wiki doesn't exist?"
         return
 
-    wiki_data = items[wiki_id]
+    api_data = items[wiki_id]
+    wiki_data = {
+        'id': api_data['id'],
+        'wam_f': {'set': api_data['wam_score']},
+        'desc_txt': {'set': api_data['desc']}
+    }
+    for key in api_data['stats'].keys():
+        wiki_data['%s_i' % key] = {'set': api_data['stats'][key]}
 
     collection = solr.existing_collection(solr.collection_for_wiki(wiki_id))
 
@@ -153,7 +162,8 @@ def ingest_data(wiki_id):
     for counter, (doc_id, entity_data) in enumerate(wpe.items()):
         documents.append({
             'id': doc_id,
-            'entities_txt': {'set': list(set(entity_data.get(u'redirects', {}).values() + entity_data.get(u'titles')))},
+            'attr_entities': {'set': list(set(entity_data.get(u'redirects', {}).values()
+                                              + entity_data.get(u'titles')))},
             'type_s': {'set': 'Page'},
             'authority_f': {'set': pages_to_authority.get(doc_id, 0)}
         })
@@ -161,7 +171,7 @@ def ingest_data(wiki_id):
         if counter % 1500 == 0:
             print counter
             grouped_futures.append(
-                group(add_with_metadata.s(wiki_data, grouping) for grouping in iter_grouper(15, documents))()
+                group(add_with_metadata.s(api_data, grouping) for grouping in iter_grouper(15, documents))()
             )
 
             documents = []
@@ -185,20 +195,22 @@ def ingest_data(wiki_id):
 
     collection.commit()
 
-    wiki_data['entities_txt'] = []
+    wiki_data['attr_entities'] = {'set': []}
     for count, entities in WikiEntitiesService().get_value(str(wiki_id)):
         for entity in entities:
-            map(wiki_data['entities_txt'].append, [entity] * count)
+            map(wiki_data['attr_entities']['set'].append, [entity] * count)
 
     wiki_data['user_ids_is'] = {'set': all_user_ids}
-    wiki_data['users_txt'] = {'set': all_users}
+    wiki_data['attr_users'] = {'set': all_users}
+    wiki_data['total_authority_f'] = {'set': sum(pages_to_authority.values())}
+    wiki_data['authorities_fs'] = {'set': pages_to_authority.values()}
 
     wiki_collection = solr.existing_collection(solr.global_collection())
     wiki_collection.add(wiki_data)
     wiki_collection.commit()
 
     print "Retrieving user docs..."
-    futures = group(build_wiki_user_doc.s(wiki_data, user_tuple) for user_tuple in all_user_tuples)()
+    futures = group(build_wiki_user_doc.s(api_data, user_tuple) for user_tuple in all_user_tuples)()
 
     while not futures.ready():
         print "Progress: (%d/%d)" % (futures.completed_count(), len(futures.results))
@@ -218,4 +230,47 @@ def ingest_data(wiki_id):
     # next steps:
     # * Need to create User document for Wiki core by aggregating PageUsers
     # * Will need to create a separate task for creating global user documents I think
-    #
+
+
+def global_ingestion():
+    print "Analyzing Wikis..."
+    wiki_collection = solr.existing_collection(solr.global_collection())
+
+    wiki_docs = [doc for doc in solr.get_all_docs_by_query(wiki_collection, '*:*')]
+    scaler = MinMaxScaler([doc['total_authority_f'] for doc in wiki_docs])
+    for doc in wiki_docs:
+        doc['scaled_authority_f'] = scaler.scale(doc['total_authority_f'])
+
+    print "Analyzing Users..."
+    user_collection = solr.existing_collection(solr.user_collection())
+    wiki_user_collection = solr.wiki_user_collection()
+
+    id_to_docs = dict()
+    for user_doc in solr.get_all_docs_by_query(wiki_user_collection, '*:*'):
+        doc_id = user_doc['id']
+        if doc_id not in id_to_docs:
+            id_to_docs[doc_id] = dict(id=doc_id,
+                                      attr_entities={'set': []},
+                                      name_s={'set': user_doc['name_s']},
+                                      wikis_is={'set': []},
+                                      attr_wikis={'set': []},
+                                      authorities_fs={'set': []},
+                                      total_authority_f={'set': 0},
+                                      scaled_authority_f={'set': 0})
+        map(id_to_docs[doc_id]['attr_entities']['set'].append, user_doc['attr_entities'])
+        id_to_docs[doc_id]['wikis_is']['set'].append(user_doc['wiki_id_i'])
+        id_to_docs[doc_id]['attr_wikis']['set'].append(user_doc['wiki_name_txt'])
+        id_to_docs[doc_id]['authorities_fs']['set'].append(user_doc['total_page_authority_f'])
+
+    id_to_total_authorities = dict([(uid, sum(doc['total_page_authorities_fs'])) for uid, doc in id_to_docs.items()])
+    user_scaler = MinMaxScaler(id_to_total_authorities.values())
+    for uid, total_authority in id_to_total_authorities:
+        id_to_docs[uid]['total_authority_f']['set'] = total_authority
+        id_to_docs[uid]['scaled_authority_f']['set'] = user_scaler.scale(total_authority)
+
+    user_collection.add(id_to_docs.values())
+    user_collection.commit()
+
+
+    # we also need to start thinking about how we're going to represent topics and what their authority is per wiki,
+    # and per page.
