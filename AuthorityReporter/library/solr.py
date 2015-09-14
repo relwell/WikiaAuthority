@@ -14,6 +14,14 @@ def collection_for_wiki(wiki_id):
     return connection()[str(wiki_id)]
 
 
+def all_topics_collection():
+    return connection()['all_topics']
+
+
+def all_pages_collection():
+    return connection()['all_pages']
+
+
 def wiki_user_collection():
     return connection()['wiki_users']
 
@@ -24,6 +32,10 @@ def global_collection():
 
 def user_collection():
     return connection()['users']
+
+
+def all_user_pages_collection():
+    return connection()['all_user_pages']
 
 
 def existing_collection(collection):
@@ -94,7 +106,7 @@ def iterate_results(collection, searchoptions):
             break
 
 
-def get_docs_by_query(collection, query, page=1, sort="id asc", docsize=DEFAULT_DOCSIZE, fields=None):
+def get_docs_by_query(collection, query, page=1, sort="id asc", docsize=DEFAULT_DOCSIZE, fields=None, boost=None):
     """
     Helper function for accessing docs by query
 
@@ -116,10 +128,11 @@ def get_docs_by_query(collection, query, page=1, sort="id asc", docsize=DEFAULT_
                                         sort=sort,
                                         limit=docsize,
                                         offset=(page-1) * docsize,
-                                        fields=fields)
+                                        fields=fields,
+                                        boost=boost)
 
 
-def get_docs_by_query_with_limit(collection, query, limit=None, offset=None, sort=None, fields=None):
+def get_docs_by_query_with_limit(collection, query, limit=None, offset=None, sort=None, fields=None, boost=None):
     """
     Helper function for accessing docs by query
 
@@ -139,10 +152,10 @@ def get_docs_by_query_with_limit(collection, query, limit=None, offset=None, sor
     :rtype: dict
     """
 
-    return get_result_by_query(collection, query, limit, offset, sort, fields=fields)['docs']
+    return get_result_by_query(collection, query, limit, offset, sort, fields=fields, boost=boost)['docs']
 
 
-def get_paginated_result_by_query(collection, query, page=1, sort=None, docsize=DEFAULT_DOCSIZE, **kwargs):
+def get_paginated_result_by_query(collection, query, page=1, sort=None, docsize=DEFAULT_DOCSIZE, **kwargs, boost=None):
     """
     Helper function for accessing result by query using approach
 
@@ -157,10 +170,10 @@ def get_paginated_result_by_query(collection, query, page=1, sort=None, docsize=
     :return: the response dict
     :rtype: dict
     """
-    return get_result_by_query(collection, query, limit=docsize, sort=sort, offset=(page-1) * docsize)
+    return get_result_by_query(collection, query, limit=docsize, sort=sort, offset=(page-1) * docsize, boost=boost)
 
 
-def get_result_by_query(collection, query, limit=None, offset=None, sort=None, fields=None):
+def get_result_by_query(collection, query, limit=None, offset=None, sort=None, fields=None, boost=None):
     """
     Helper function for accessing result by query -- lets us access numfound as well
 
@@ -185,6 +198,10 @@ def get_result_by_query(collection, query, limit=None, offset=None, sort=None, f
         se.commonparams.sort(sort)
     if fields:
         se.commonparams.fl(fields)
+    if boost:
+        # i know this is protected, but wtf is wrong with solrcloudpy being so underfeatured
+        se.commonparams._q['boost'].add(boost)
+        se.commonparams._q['defType'].add('edismax')  # todo: we may want edismax everywhere?
     se.commonparams.rows(limit)
     se.commonparams.start(offset)
     response = collection.search(se)
