@@ -35,7 +35,9 @@ def add_with_metadata(wiki_data, docs):
         u'service': u'Metadata',
         u'ids': u'|'.join([doc['id'] for doc in docs if doc])  # doc can be none here LOL
     }
-    response = requests.get(u"%swikia.php" % wiki_data['url'], params=params).json()
+
+    r = requests.get(u"%swikia.php" % wiki_data['url'], params=params)
+    response = r.json()
     author_pages = []
 
     pa = PageAuthorityService()
@@ -44,6 +46,9 @@ def add_with_metadata(wiki_data, docs):
 
     for doc in docs:
         for resp in response.get('contents', []):
+            if 'id' not in resp:
+                continue
+
             if doc['id'] == resp['id']:
                 doc.update(resp)
 
@@ -88,6 +93,7 @@ def add_with_metadata(wiki_data, docs):
     return user_dict.keys()
 
 
+@shared_task
 def build_wiki_user_doc(wiki_data, user_tuple):
     """
     Retrieves data from wiki collection to generate a user document at the wiki level
@@ -118,9 +124,12 @@ def build_wiki_user_doc(wiki_data, user_tuple):
     contribs = []
     for doc in solr.get_all_docs_by_query(collection, 'type_s:PageUser AND user_id_i:%d' % user_id):
         doc_ids.append(doc['doc_id_s'])
-        map(entities.append, doc['attr_entities'])
-        authorities.append(doc['user_page_authority_f'])
-        contribs.append(doc['contribs_f'])
+        if 'attr_entities' in doc:
+            map(entities.append, doc['attr_entities'])
+        if 'user_page_authority_f' in doc:
+            authorities.append(doc['user_page_authority_f'])
+        if 'contribs_f' in doc:
+            contribs.append(doc['contribs_f'])
 
     total_authorities = sum(authorities)
     total_contribs = sum(contribs)
@@ -155,11 +164,14 @@ def get_wiki_topic_doc(wiki_id, topic):
     all_user_name_dict = {}
 
     for doc in solr.get_all_docs_by_query(collection, 'type_s:Page AND attr_entities:"%s"' % topic):
-        for user_id in doc['user_ids_is']:
-            all_user_id_dict[user_id] = True
-        for user_name in doc['attr_users']:
-            all_user_name_dict[user_name] = True
-        authorities.append(doc['authority_f'])
+        if 'user_id_is' in doc:
+            for user_id in doc['user_ids_is']:
+                all_user_id_dict[user_id] = True
+        if 'attr_users' in doc:
+            for user_name in doc['attr_users']:
+                all_user_name_dict[user_name] = True
+        if 'authority_f' in doc:
+            authorities.append(doc['authority_f'])
 
     total_authority = sum(authorities)
     return {
@@ -183,6 +195,10 @@ def ingest_data(wiki_id):
     :type wiki_id: int
     :return:
     """
+
+    # make sure all pages and all user pages exists
+    solr.existing_collection(solr.all_pages_collection())
+    solr.existing_collection(solr.all_user_pages_collection())
 
     resp = requests.get(u'http://www.wikia.com/api/v1/Wikis/Details', params={u'ids': wiki_id})
     items = resp.json()['items']
@@ -222,27 +238,36 @@ def ingest_data(wiki_id):
             'authority_f': {'set': pages_to_authority.get(doc_id, 0)}
         })
 
-        if counter % 1500 == 0:
-            print counter
+        if counter != 0 and counter % 1500 == 0:
             grouped_futures.append(
                 group(add_with_metadata.s(api_data, grouping) for grouping in iter_grouper(15, documents))()
             )
 
             documents = []
 
-    # block on completion of all grouped futures
-    while True:
-        completed = 0
-        total = 0
-        for future in grouped_futures:
-            completed += future.completed_count()
-            total += len(future.results)
-        print "Grouped Tasks: (%d/%d)" % (completed, total)
-        sleep(30)
+    grouped_futures.append(
+        group(add_with_metadata.s(api_data, grouping) for grouping in iter_grouper(15, documents))()
+    )
 
-    # Get ready to behold the power of fp and async:
-    # unpack all the return values into list, flatten the list via list comprehension
-    all_user_tuples = list(set([user_tuple for future in grouped_futures for user_tuple in future.get()]))
+    # block on completion of all grouped futures
+    completed = 0
+    total = 0
+    while len(filter(lambda x: not x.ready(), grouped_futures)) > 1:
+        new_completed = 0
+        new_total = 0
+        for future in grouped_futures:
+            new_completed += future.completed_count()
+            new_total += len(future.results)
+        if completed != new_completed or total != new_total:
+            completed = new_completed
+            total = new_total
+            print "Grouped Tasks: (%d/%d)" % (completed, total)
+        sleep(2)
+
+    all_user_tuples = []
+    for future in grouped_futures:
+        map(all_user_tuples.append, future.get()[0])
+    all_user_tuples = list(set(all_user_tuples))
 
     # assign the unique user ids to the first variable, and the unique usernames to the second
     all_user_ids, all_users = zip(*all_user_tuples)
@@ -252,9 +277,10 @@ def ingest_data(wiki_id):
     solr.all_user_pages_collection().commit()
 
     wiki_data['attr_entities'] = {'set': []}
-    for count, entities in WikiEntitiesService().get_value(str(wiki_id)):
+
+    for count, entities in WikiEntitiesService().get_value(str(wiki_id)).items():
         for entity in entities:
-            map(wiki_data['attr_entities']['set'].append, [entity] * count)
+            map(wiki_data['attr_entities']['set'].append, [entity] * int(count))  # goddamnit count isn't int
 
     wiki_data['user_ids_is'] = {'set': all_user_ids}
     wiki_data['attr_users'] = {'set': all_users}
@@ -262,8 +288,9 @@ def ingest_data(wiki_id):
     wiki_data['authorities_fs'] = {'set': pages_to_authority.values()}
 
     wiki_collection = solr.existing_collection(solr.global_collection())
-    wiki_collection.add(wiki_data)
+    wiki_collection.add([wiki_data])
     wiki_collection.commit()
+    print "Committed wiki data"
 
     print "Retrieving user docs..."
     futures = group(build_wiki_user_doc.s(api_data, user_tuple) for user_tuple in all_user_tuples)()
@@ -289,23 +316,26 @@ def ingest_data(wiki_id):
 
     print "Analyzing topics"
     futures = group(get_wiki_topic_doc.s(wiki_data['id'], topic)
-                    for topic in list(set(wiki_data['attr_entities']['set'])))
+                    for topic in list(set(wiki_data['attr_entities']['set'])))()
     future_result_len = len(futures.results)
+    counter = 0
     while not futures.ready():
-        print "Progress: (%d/%d)" % (futures.completed_count(), future_result_len)
-        sleep(30)
+        if counter % 5 == 0:
+            print "Progress: (%d/%d)" % (futures.completed_count(), future_result_len)
+        sleep(1)
+        counter += 1
     topic_docs = futures.get()
     collection.add(topic_docs)
     collection.commit()
 
-    topic_collection = solr.all_topics_collection()
+    topic_collection = solr.existing_collection(solr.all_topics_collection())
     topic_collection.add(topic_docs)
     topic_collection.commit()
 
 
 @shared_task
 def analyze_pages_globally():
-    print "Analyzing all pages..."
+    print "Analyzing All Pages..."
     page_collection = solr.all_pages_collection()
 
     authorities = []
@@ -316,7 +346,7 @@ def analyze_pages_globally():
     docs = []
     counter = 0
     for page_doc in solr.get_all_docs_by_query(page_collection, '*:*'):
-        docs.append({'id': page_doc['id'], 'scaled_authority_f': {'set': page_scaler.scale(doc['authority_f'])}})
+        docs.append({'id': page_doc['id'], 'scaled_authority_f': {'set': page_scaler.scale(page_doc['authority_f'])}})
         counter += 1
         if counter % 500:
             page_collection.add(docs)
@@ -348,9 +378,9 @@ def analyze_users_globally():
         id_to_docs[doc_id]['attr_wikis']['set'].append(user_doc['wiki_name_txt'])
         id_to_docs[doc_id]['authorities_fs']['set'].append(user_doc['total_page_authority_f'])
 
-    id_to_total_authorities = dict([(uid, sum(doc['total_page_authorities_fs'])) for uid, doc in id_to_docs.items()])
+    id_to_total_authorities = dict([(uid, sum(doc['authorities_fs']['set'])) for uid, doc in id_to_docs.items()])
     user_scaler = MinMaxScaler(id_to_total_authorities.values())
-    for uid, total_authority in id_to_total_authorities:
+    for uid, total_authority in id_to_total_authorities.items():
         id_to_docs[uid]['total_authority_f']['set'] = total_authority
         id_to_docs[uid]['scaled_authority_f']['set'] = user_scaler.scale(total_authority)
 
@@ -367,7 +397,7 @@ def analyze_wikis_globally():
     scaler = MinMaxScaler([doc['total_authority_f'] for doc in wiki_docs])
     new_docs = []
     for doc in wiki_docs:
-        new_docs.append({'id': doc['id'], 'scaled_authority_f': scaler.scale(doc['total_authority_f'])})
+        new_docs.append({'id': doc['id'], 'scaled_authority_f': {'set': scaler.scale(doc['total_authority_f'])}})
     wiki_collection.add(new_docs)
     wiki_collection.commit()
 
@@ -377,19 +407,25 @@ def aggregate_global_topic(topic):
     collection = solr.all_topics_collection()
 
     total_authorities = []
-    average_authorities = []
     all_user_id_dict = {}
     all_user_name_dict = {}
     all_wikis = []
 
     for doc in solr.get_all_docs_by_query(collection, topic):
         total_authorities.append(doc['total_authority_f'])
-        average_authorities.append(doc['average_authority_f'])
-        for user_id in doc['user_id_is']:
-            all_user_id_dict[user_id] = True
-        for user_name in doc['user_names_ss']:
-            all_user_name_dict[user_name] = True
+        if 'user_id_is' in doc:
+            for user_id in doc['user_id_is']:
+                all_user_id_dict[user_id] = True
+        if 'user_names_ss' in doc:
+            for user_name in doc['user_names_ss']:
+                all_user_name_dict[user_name] = True
         all_wikis.append(doc['wiki_id_i'])
+
+    total_authority = sum(total_authorities)
+
+    avg_authority = 0
+    if total_authority > 0:
+        avg_authority = total_authority / float(total_authority)
 
     return {
         'id': topic,
@@ -397,10 +433,8 @@ def aggregate_global_topic(topic):
         'wikis_is': {'set': all_wikis},
         'user_ids_is': {'set': all_user_id_dict.keys()},
         'user_names_ss': {'set': all_user_name_dict.keys()},
-        'total_authority_f': {'set': sum(total_authorities)},
-        'total_avg_authority_f': {'set': sum(average_authorities)},
-        'avg_total_authority_f': {'set': sum(total_authorities) / float(len(total_authorities))},
-        'avg_avg_authority_f': {'set': sum(average_authorities) / float(len(average_authorities))}
+        'total_authority_f': {'set': total_authority},
+        'avg_authority_f': {'set': avg_authority},
     }
 
 
@@ -413,12 +447,11 @@ def analyze_topics_globally():
     se.commonparams.q('*:*')
 
     futures = group(aggregate_global_topic.s(topic)
-                    for topic in solr.iterate_per_facetfield_value(collection, se, 'topic_s'))
+                    for topic, _ in solr.iterate_per_facetfield_value(collection, se, 'topic_s'))()
 
-    future_result_len = len(futures.results)
     while not futures.ready():
-        print "Progress: (%d/%d)" % (futures.completed_count(), future_result_len)
-        sleep(30)
+        print "Progress: (%d/%d)" % (futures.completed_count(), len(futures.results))
+        sleep(2)
 
     collection.add(futures.get())
     collection.commit()

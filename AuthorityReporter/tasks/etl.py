@@ -360,10 +360,21 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
     print "Initializing edit distance data"
 
     all_title_len = len(all_titles)
-    for i in range(0, all_title_len, 100):
+    group_map = []
+    for i in range(0, all_title_len, 25):
         print "%d/%d" % (i, all_title_len)
-        group(prime_edit_distance.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
-              for title_obj in all_titles[i:i+100])().get()
+        group_map.append(group(prime_edit_distance.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
+                               for title_obj in all_titles[i:i+100])())
+
+    print "Waiting on initialization to complete"
+    readies = len(filter(lambda x: x.ready(), group_map))
+    group_size = len(group_map)
+    while False in map(lambda x: x.ready(), group_map):
+        new_readies = len(filter(lambda x: x.ready(), group_map))
+        if new_readies > readies:
+            print "%d/%d" % (new_readies, group_size)
+        readies = new_readies
+        time.sleep(1)
 
     print "Getting contributing authors for titles"
     title_to_authors = group(get_contributing_authors.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
@@ -405,6 +416,7 @@ def etl(wiki_id):
 
     # get wiki info
     resp = requests.get(u'http://www.wikia.com/api/v1/Wikis/Details', params={u'ids': wiki_id})
+
     items = resp.json()['items']
     if wiki_id not in items:
         print u"Wiki doesn't exist?"
