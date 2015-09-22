@@ -155,7 +155,7 @@ def get_docs_by_query_with_limit(collection, query, limit=None, offset=None, sor
     return get_result_by_query(collection, query, limit, offset, sort, fields=fields, boost=boost)['docs']
 
 
-def get_paginated_result_by_query(collection, query, page=1, sort=None, docsize=DEFAULT_DOCSIZE, **kwargs, boost=None):
+def get_paginated_result_by_query(collection, query, page=1, sort=None, docsize=DEFAULT_DOCSIZE, boost=None, **kwargs):
     """
     Helper function for accessing result by query using approach
 

@@ -89,14 +89,14 @@ def excel_response(spreadsheet, filename=u'export.xls'):
     return response
 
 
-@app.route(u'/wiki/<wiki_id>/topics/')
+@app.route(u'/api/wiki/<wiki_id>/topics/')
 def topics_for_wiki(wiki_id):
     global args
     model = WikiModel(wiki_id, args)
     return render_template(u'topics.html', topics=model.get_topics(), wiki_api_data=model.api_data)
 
 
-@app.route(u'/wiki/<wiki_id>/users/')
+@app.route(u'/api/wiki/<wiki_id>/users/')
 def users_for_wiki(wiki_id):
     """
     Shows the top 10 users for a wiki
@@ -106,7 +106,7 @@ def users_for_wiki(wiki_id):
     return render_template(u'authors.html', authors=model.get_authors(limit=12), wiki_api_data=model.api_data)
 
 
-@app.route(u'/wiki/<wiki_id>/pages/')
+@app.route(u'/api/wiki/<wiki_id>/pages/')
 def pages_for_wiki(wiki_id):
     """
     Shows the top 10 pages for a wiki by authority
@@ -138,7 +138,7 @@ def wiki_autocomplete():
                     content_type=u"application/javascript")
 
 
-@app.route(u'/wiki/<wiki_id>/page/<page_id>/')
+@app.route(u'/api/wiki/<wiki_id>/page/<page_id>/')
 def page_index(wiki_id, page_id):
     """
     Shows the top users and topics for a given page
@@ -149,7 +149,7 @@ def page_index(wiki_id, page_id):
                            wiki_api_data=model.wiki.api_data, page_title=model.api_data[u'title'])
 
 
-@app.route(u'/topic/<topic>/wikis/')
+@app.route(u'/api/topic/<topic>/wikis/')
 def wikis_for_topic(topic):
     """
     Shows the top wikis for a topic
@@ -174,7 +174,7 @@ def wikis_for_topic_xls(topic):
     return excel_response(wkbk, filename=u"%s-wikis.xls" % topic)
 
 
-@app.route(u'/topic/<topic>/pages/')
+@app.route(u'/api/topic/<topic>/pages/')
 def pages_for_topic(topic):
     """
     Shows the top pages for a topic
@@ -201,7 +201,7 @@ def pages_for_topic_xls(topic):
     return excel_response(workbook, filename=u'%s-pages.xls' % topic)
 
 
-@app.route(u'/topic/<topic>/users/')
+@app.route(u'/api/topic/<topic>/users/')
 def users_for_topic(topic):
     """
     Shows the top 10 users for a topic
@@ -230,7 +230,7 @@ def users_for_topic_xls(topic):
     return excel_response(workbook, filename=u'%s-users.xls' % topic)
 
 
-@app.route(u'/user/<user_name>/pages/')
+@app.route(u'/api/user/<user_name>/pages/')
 def pages_for_user(user_name):
     """
     Shows the top 10 pages for a user
@@ -240,7 +240,7 @@ def pages_for_user(user_name):
     return render_template(u'user_pages.html', user_name=user_name, pages=model.get_pages(limit=12))
 
 
-@app.route(u'/user/<user_name>/topics/')
+@app.route(u'/api/user/<user_name>/topics/')
 def topics_for_user(user_name):
     """
     Shows the top 10 topics for a user
@@ -249,7 +249,7 @@ def topics_for_user(user_name):
     return render_template(u'topics.html', user_name=user_name, topics=UserModel(user_name, args).get_topics())
 
 
-@app.route(u'/user/<user_name>/wikis/')
+@app.route(u'/api/user/<user_name>/wikis/')
 def wikis_for_user(user_name):
     """
     Shows the top 10 wikis for a user
@@ -265,7 +265,7 @@ def index():
     """
     Index page
     """
-    return render_template(u'v2_index.html')
+    return app.send_static_file(u'../frontend/src/index.html')
 
 
 def main():
