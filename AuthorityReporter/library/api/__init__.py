@@ -3,6 +3,8 @@ import inspect
 from flask.ext.restful import reqparse
 from flask.ext import restful
 from .. import models
+from AuthorityReporter.library import solr
+from solrcloudpy import SearchOptions
 
 app_args = None
 
@@ -229,6 +231,14 @@ class WikiPages(restful.Resource):
             u'limit': request_args[u'limit'],
             u'pages': models.WikiModel(wiki_id, app_args).get_pages(**request_args)
         }
+
+
+class Hubs(restful.Resource):
+
+    urls = [u"/api/hubs"]
+
+    def get(self):
+        return dict(solr.iterate_per_facetfield_value(solr.global_collection(), SearchOptions({'q': '*:*'}), 'hub_s'))
 
 
 class Wiki(restful.Resource):

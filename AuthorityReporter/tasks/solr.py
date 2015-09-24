@@ -215,6 +215,13 @@ def ingest_data(wiki_id):
     for key in api_data['stats'].keys():
         wiki_data['%s_i' % key] = {'set': api_data['stats'][key]}
 
+    wiki_api_data = requests.get(u'%swikia.php',
+                                 params={u'method': u'getForWiki',
+                                         u'service': u'CrossWikiCore',
+                                         u'controller': u'WikiaSearchIndexerController'}).json()[u'contents']
+
+    wiki_data[u'hub_s'] = wiki_api_data[u'hub_s']
+
     collection = solr.existing_collection(solr.collection_for_wiki(wiki_id))
 
     use_caching(is_read_only=True, shouldnt_compute=True)
