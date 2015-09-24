@@ -56,3 +56,6 @@ venv/
 docs/docs/_build/*
 docs/docs/_static/*
 docs/docs/_templates/*
+
+# static is a symlink
+AuthorityReporter/static

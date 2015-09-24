@@ -88,11 +88,19 @@ def excel_response(spreadsheet, filename=u'export.xls'):
     response.set_cookie(u'fileDownload', u'true', path=u'/')
     return response
 
-@app.route(u'/api/wiki/<wiki_id>/')
-def wiki_data(wiki_id):
+
+@app.route(u'/api/wiki/<wiki_id>/details')
+def wiki_details(wiki_id):
     global args
     model = WikiModel(wiki_id, args)
-    return jsonify(**model.api_data())
+    return jsonify(**model.api_data)
+
+
+@app.route(u'/api/user/<user_id>/details')
+def user_data(user_id):
+    global args
+    model = UserModel(user_id, args)
+    return jsonify(**model.api_data)
 
 
 @app.route(u'/api/wiki/<wiki_id>/topics/')
@@ -266,12 +274,15 @@ def wikis_for_user(user_name):
                            user_name=user_name)
 
 
-@app.route(u'/')
-def index():
-    """
-    Index page
-    """
-    return app.send_static_file(u'../frontend/src/index.html')
+@app.route('/')
+def root():
+    return app.send_static_file('index.html')
+
+
+@app.route('/<path:path>')
+def static_proxy(path):
+    # send_static_file will guess the correct MIME type
+    return app.send_static_file(path)
 
 
 def main():

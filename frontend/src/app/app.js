@@ -2,7 +2,8 @@ angular.module( 'wikiaAuthority', [
   'templates-app',
   'templates-common',
   'wikiaAuthority.home',
-  'wikiaAuthority.wiki_users',
+  'wikiaAuthority.wiki',
+  'wikiaAuthority.user',
   'ui.router'
 ])
 

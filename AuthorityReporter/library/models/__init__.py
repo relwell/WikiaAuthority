@@ -7,21 +7,6 @@ from AuthorityReporter.library import solr
 from celery import shared_task
 
 
-class BaseModel():
-    """
-    Base class for models
-    """
-
-    def __init__(self, args):
-        """
-        Initializes db and cursor
-
-        :param args: a namespace object with db connection data
-        :type args: argparse.Namespace
-        """
-        self.db, self.cursor = get_db_and_cursor(args)
-
-
 @shared_task
 def get_page_response(tup):
     current_url, ids = tup
@@ -29,7 +14,7 @@ def get_page_response(tup):
     return current_url, dict(response.json().get(u'items', {}))
 
 
-class TopicModel(BaseModel):
+class TopicModel():
 
     """
     Provides logic for interacting with a given topic
@@ -46,7 +31,6 @@ class TopicModel(BaseModel):
 
         """
         self.topic = topic
-        BaseModel.__init__(self, args)
 
     def get_pages(self, limit=10, offset=None, for_api=False):
         """
@@ -115,7 +99,7 @@ class TopicModel(BaseModel):
                                                  boost='scaled_authority_f')
 
 
-class WikiModel(BaseModel):
+class WikiModel():
     """
     Logic for a given wiki
     """
@@ -132,7 +116,6 @@ class WikiModel(BaseModel):
         self.wiki_id = wiki_id
         self.args = args  # stupid di
         self._api_data = None
-        BaseModel.__init__(self, args)
 
     @property
     def api_data(self):
@@ -370,7 +353,7 @@ class WikiModel(BaseModel):
         return workbook
 
 
-class PageModel(BaseModel):
+class PageModel():
     """
     Logic for a given page
     """
@@ -387,7 +370,6 @@ class PageModel(BaseModel):
         :type args: arparse.Namespace
 
         """
-        BaseModel.__init__(self, args)
         self.page_id = page_id
         self.wiki_id = wiki_id
         self.wiki = WikiModel(wiki_id, args)
@@ -457,23 +439,27 @@ class PageModel(BaseModel):
             return row
 
 
-class UserModel(BaseModel):
+class UserModel():
     """
     Data model for user
     """
 
-    def __init__(self, user_name, args):
+    def __init__(self, user_id, args):
         """
         init method
 
-        :param user_name: the username we care about
-        :type user_name: str
+        :param user_id: the user id we care about
+        :type user_id: int
         :param args: namespace
         :type args: argparse.Namespace
 
         """
-        BaseModel.__init__(self, args)
-        self.user_name = user_name
+        self._api_data = None
+        self.user_id = user_id
+
+    """
+    TODO REIMPLEMENT WITH USER_ID
+    """
 
     def get_pages(self, limit=10, offset=0, for_api=False):
         """
@@ -561,6 +547,15 @@ class UserModel(BaseModel):
         """
         for doc in solr.get_all_docs_by_query(solr.user_collection(), 'name_txt_en:"%s"' % self.user_name):
             return doc['attr_entities']
+
+
+    @property
+    def api_data(self):
+        if not self._api_data:
+            self._api_data = requests.get(u'http://www.wikia.com/api/v1/User/Details',
+                                          params=dict(ids=self.user_id)).json()
+        return self._api_data
+
 
 
 class MinMaxScaler:
