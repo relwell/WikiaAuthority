@@ -1,8 +1,8 @@
-angular.module( 'ngBoilerplate', [
+angular.module( 'wikiaAuthority', [
   'templates-app',
   'templates-common',
-  'ngBoilerplate.home',
-  'ngBoilerplate.about',
+  'wikiaAuthority.home',
+  'wikiaAuthority.wiki_users',
   'ui.router'
 ])
 
@@ -16,7 +16,7 @@ angular.module( 'ngBoilerplate', [
 .controller( 'AppCtrl', function AppCtrl ( $scope, $location ) {
   $scope.$on('$stateChangeSuccess', function(event, toState, toParams, fromState, fromParams){
     if ( angular.isDefined( toState.data.pageTitle ) ) {
-      $scope.pageTitle = toState.data.pageTitle + ' | ngBoilerplate' ;
+      $scope.pageTitle = toState.data.pageTitle + ' | WikiaAuthority' ;
     }
   });
 })

@@ -4,7 +4,7 @@ import mimetypes
 import StringIO
 
 import xlwt
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, jsonify
 from flask.ext import restful
 from werkzeug.datastructures import Headers
 from nlp_services.caching import use_caching
@@ -87,6 +87,12 @@ def excel_response(spreadsheet, filename=u'export.xls'):
     response.headers = response_headers
     response.set_cookie(u'fileDownload', u'true', path=u'/')
     return response
+
+@app.route(u'/api/wiki/<wiki_id>/')
+def wiki_data(wiki_id):
+    global args
+    model = WikiModel(wiki_id, args)
+    return jsonify(**model.api_data())
 
 
 @app.route(u'/api/wiki/<wiki_id>/topics/')

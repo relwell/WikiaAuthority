@@ -5,7 +5,7 @@
  * automatically.
  */
 describe( 'home section', function() {
-  beforeEach( module( 'wikiaAuthority.home' ) );
+  beforeEach( module( 'wikiaAuthority.wiki_users' ) );
 
   it( 'should have a dummy test', inject( function() {
     expect( true ).toBeTruthy();

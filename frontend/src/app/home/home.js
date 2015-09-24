@@ -1,4 +1,4 @@
-angular.module( 'ngBoilerplate.home', [
+angular.module( 'wikiaAuthority.home', [
   'ui.router'
 ])
 
