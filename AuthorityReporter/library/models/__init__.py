@@ -1,5 +1,3 @@
-from wikia_dstk.authority import get_db_and_cursor
-from collections import OrderedDict
 import requests
 import xlwt
 from nlp_services.caching import use_caching
@@ -14,25 +12,22 @@ def get_page_response(tup):
     return current_url, dict(response.json().get(u'items', {}))
 
 
-class TopicModel():
+class TopicModel:
 
     """
     Provides logic for interacting with a given topic
     """
 
-    def __init__(self, topic, args):
+    def __init__(self, topic):
         """
         Init method
 
         :param topic: the topic
         :type topic: str
-        :param args: the argparse namespace w/ db info
-        :type args: argparse.Namespace
-
         """
         self.topic = topic
 
-    def get_pages(self, limit=10, offset=None, for_api=False):
+    def get_pages(self, limit=10, offset=None):
         """
         Gets most authoritative pages for a topic using Authority DB and Wikia API data
 
@@ -40,8 +35,6 @@ class TopicModel():
         :type limit: int
         :param offset: offset
         :type offset: int
-        :param for_api: if it's for the api, we add less
-        :type for_api: bool
 
         :return: a list of objects reflecting page results
         :rtype: list
@@ -54,7 +47,7 @@ class TopicModel():
                                                  offset=offset,
                                                  boost='scaled_authority_f')
 
-    def get_wikis(self, limit=10, offset=0, for_api=False):
+    def get_wikis(self, limit=10, offset=0):
         """
         Gets wikis for the current topic
 
@@ -62,8 +55,6 @@ class TopicModel():
         :type limit: int
         :param offset: offset
         :type offset: int
-        :param for_api: if it's for the api, we add less
-        :type for_api: bool
 
         :return: a dict with keys for wikis (objects) and wiki ids (ints) for ordering or an ordered list of dicts
         :rtype: dict|list
@@ -76,7 +67,7 @@ class TopicModel():
                                                  offset=offset,
                                                  boost='scaled_authority_f')
 
-    def get_users(self, limit=10, offset=0, for_api=False):
+    def get_users(self, limit=10, offset=0):
         """
         Gets users for a given topic
 
@@ -84,8 +75,6 @@ class TopicModel():
         :type limit: int
         :param offset: offset
         :type offset: int
-        :param for_api: if it's for the api, we add less
-        :type for_api: bool
 
         :return: a list of objects related to authors
         :rtype: list
@@ -99,23 +88,21 @@ class TopicModel():
                                                  boost='scaled_authority_f')
 
 
-class WikiModel():
+class WikiModel:
     """
     Logic for a given wiki
     """
-    def __init__(self, wiki_id, args):
+    def __init__(self, wiki_id):
         """
         Initialized Wiki model
 
         :param wiki_id: The ID of the wiki
         :type wiki_id: int
-        :param args: arguments from command line
-        :type args: argparse.Namespace
-
         """
         self.wiki_id = wiki_id
         self.args = args  # stupid di
         self._api_data = None
+
 
     @property
     def api_data(self):
@@ -130,6 +117,7 @@ class WikiModel():
                                           params=dict(ids=self.wiki_id)).json()[u'items'][self.wiki_id]
         return self._api_data
 
+
     def get_row(self):
         """
         Gets the database for this wiki
@@ -141,7 +129,7 @@ class WikiModel():
         for doc in solr.get_all_docs_by_query(collection, 'id:%s' % str(self.wiki_id)):
             return doc
 
-    def get_topics(self, limit=10, offset=None, for_api=False):
+    def get_topics(self, limit=10, offset=None):
         """
         Get topics for this wiki
 
@@ -149,8 +137,6 @@ class WikiModel():
         :type limit: int|None
         :param offset: offset
         :type offset: int
-        :param for_api: if it's for the api, we add less
-        :type for_api: bool
 
         :return: a list of dicts
         :rtype: list
@@ -162,28 +148,27 @@ class WikiModel():
                                                  ofset=offset,
                                                  sort='total_authority_f desc')
 
-    def get_all_authors(self):
+    def get_all_users(self):
         """
-        Optimized to get all authors
+        Optimized to get all users
 
-        :return: an OrderedDict with author dicts
+        :return: an OrderedDict with user dicts
         :rtype: collections.OrderedDict
         """
 
         return solr.get_all_docs_by_query(solr.wiki_user_collection(), 'wiki_id_i:%s' % self.wiki_id);
 
-    def get_authors(self, limit=10, offset=None, for_api=False):
-        """
-        Provides the top authors for a wiki
 
-        :param limit: number of authors you want
+    def get_users(self, limit=10, offset=None):
+        """
+        Provides the top users for a wiki
+
+        :param limit: number of users you want
         :type limit: int
         :param offset: offset
         :type offset: int
-        :param for_api: if it's for the api, we add less
-        :type for_api: bool
 
-        :return: list of author dicts
+        :return: list of user dicts
         :rtype: list
         """
 
@@ -193,7 +178,7 @@ class WikiModel():
                                           offset=offset,
                                           sort='total_page_authority_f desc')
 
-    def get_pages(self, limit=10, offset=None, for_api=False):
+    def get_pages(self, limit=10, offset=None):
         """
         Gets most authoritative pages for this wiki
 
@@ -201,8 +186,6 @@ class WikiModel():
         :type limit: int
         :param offset: offset
         :type offset: int
-        :param for_api: if it's for the api, we add less
-        :type for_api: bool
 
         :return: a list of page objects if not for api, otherwise an ordereddict
         :rtype: list|OrderedDict
@@ -214,30 +197,6 @@ class WikiModel():
                                                  offset=offset,
                                                  sort='authority_f desc')
 
-    def get_all_titles(self, apfrom=None, aplimit=500):
-        """
-        Returns all titles for this wiki
-
-        :param apfrom: starting string
-        :type apfrom: unicode
-        :param aplimit: number of titles
-        :type aplimit: int
-
-        :return: list of pages
-        :rtype: list
-        """
-        params = {u'action': u'query', u'list': u'allpages', u'aplimit': aplimit,
-                  u'apfilterredir': u'nonredirects', u'format': u'json'}
-        if apfrom is not None:
-            params[u'apfrom'] = apfrom
-        resp = requests.get(u'%s/api.php' % self.api_data[u'url'], params=params)
-        response = resp.json()
-        resp.close()
-        allpages = response.get(u'query', {}).get(u'allpages', [])
-        if u'query-continue' in response:
-            return allpages + self.get_all_titles(apfrom=response[u'query-continue'][u'allpages'][u'apfrom'],
-                                                  aplimit=aplimit)
-        return allpages
 
     def get_all_pages(self):
         """
@@ -353,12 +312,12 @@ class WikiModel():
         return workbook
 
 
-class PageModel():
+class PageModel:
     """
     Logic for a given page
     """
 
-    def __init__(self, wiki_id, page_id, args):
+    def __init__(self, wiki_id, page_id):
         """
         Init method
 
@@ -366,9 +325,6 @@ class PageModel():
         :type wiki_id: int
         :param page_id: the id of the page
         :type page_id: int
-        :param args: namespace with db info
-        :type args: arparse.Namespace
-
         """
         self.page_id = page_id
         self.wiki_id = wiki_id
@@ -388,7 +344,7 @@ class PageModel():
                                           params=dict(ids=self.page_id)).json()[u'items'][self.page_id]
         return self._api_data
 
-    def get_users(self, limit=10, offset=0, for_api=False):
+    def get_users(self, limit=10, offset=0):
         """
         Get the most authoritative users for this page
 
@@ -396,8 +352,6 @@ class PageModel():
         :type limit: int
         :param offset: offset
         :type offset: int
-        :param for_api: if it's for the api, we add less
-        :type for_api: bool
 
         :return: a list of of user dicts in order of authority
         :rtype: list
@@ -411,7 +365,7 @@ class PageModel():
             boost='contribs_f'
         )
 
-    def get_topics(self, limit=10, offset=0, for_api=False):
+    def get_topics(self, limit=10, offset=0):
         """
         Get the topics for the current page
 
@@ -419,8 +373,6 @@ class PageModel():
         :type limit: int
         :param offset: offset
         :type offset: int
-        :param for_api: if it's for the api, we add less
-        :type for_api: bool
 
         :return: a list of strings
         :rtype: list
@@ -439,50 +391,42 @@ class PageModel():
             return row
 
 
-class UserModel():
+class UserModel:
     """
     Data model for user
     """
 
-    def __init__(self, user_id, args):
+    def __init__(self, user_id):
         """
         init method
 
         :param user_id: the user id we care about
         :type user_id: int
-        :param args: namespace
-        :type args: argparse.Namespace
-
         """
         self._api_data = None
         self.user_id = user_id
 
-    """
-    TODO REIMPLEMENT WITH USER_ID
-    """
 
-    def get_pages(self, limit=10, offset=0, for_api=False):
+    def get_pages(self, limit=10, offset=0):
         """
-        Gets top pages for this author
+        Gets top pages for this user
         calculated by contribs times global authority
 
         :param limit: how many you want
         :type limit: int
         :param offset: offset
         :type offset: int
-        :param for_api: if it's for the api, we add less
-        :type for_api: bool
 
         :return: a list of dicts
         :rtype: list
         """
         return solr.get_docs_by_query_with_limit(solr.all_user_pages_collection(),
-                                                 'name_txt_en:%s' % self.user_name,
+                                                 'user_id_i:%d' % self.user_id,
                                                  limit=limit,
                                                  offset=offset,
                                                  boost='user_page_authority_f')
 
-    def get_wikis(self, limit=10, offset=0, for_api=False):
+    def get_wikis(self, limit=10, offset=0):
         """
         Most important wikis for this user
         Calculated by sum of contribs times global authority
@@ -491,19 +435,17 @@ class UserModel():
         :type limit: int
         :param offset: offset
         :type offset: int
-        :param for_api: if it's for the api, we add less
-        :type for_api: bool
 
         :return: an ordereddict of wiki ids to wiki dicts, or a list, for API
         :rtype: collections.OrderedDict|list
         """
         return solr.get_docs_by_query_with_limit(solr.wiki_user_collection(),
-                                                 'name_txt_en:%s' % self.user_name,
+                                                 'user_id_i:%d' % self.user_id,
                                                  limit=limit,
                                                  offset=offset,
                                                  boost='scaled_contribs_authority_f')
 
-    def get_topics(self, limit=10, offset=0, for_api=False):
+    def get_topics(self, limit=10, offset=0):
         """
         Gets most important topics for this user
 
@@ -511,15 +453,13 @@ class UserModel():
         :type limit: int
         :param offset: offset
         :type offset: int
-        :param for_api: if it's for the api, we fix the naming
-        :type for_api: bool
 
         :return: ordered dict of topic name to auth or a list of dicts
         :rtype: collections.OrderedDict|list
         """
         self.get_row()['attr_entities']
 
-    def get_topics_for_wiki(self, wiki_id, limit=10, offset=0, for_api=False):
+    def get_topics_for_wiki(self, wiki_id, limit=10, offset=0):
         """
         Gets most important topics for this user on this wiki
 
@@ -529,13 +469,11 @@ class UserModel():
         :type limit: int
         :param offset: offset
         :type offset: int
-        :param for_api: if it's for the api, we fix the naming
-        :type for_api: bool
 
         :return: ordered dict of topic name to auth or a list of dicts for api
         :rtype: collections.OrderedDict|list
         """
-        for doc in solr.get_all_docs_by_query(solr.wiki_user_collection(), 'name_txt_en:"%s"' % self.user_name):
+        for doc in solr.get_all_docs_by_query(solr.wiki_user_collection(), 'user_id_i:%d' % self.user_id):
             return doc['attr_entities']
 
     def get_row(self):
@@ -545,8 +483,8 @@ class UserModel():
         :return: row data
         :rtype: dict
         """
-        for doc in solr.get_all_docs_by_query(solr.user_collection(), 'name_txt_en:"%s"' % self.user_name):
-            return doc['attr_entities']
+        for doc in solr.get_all_docs_by_query(solr.user_collection(), "user_id_i:%d" % self.user_id):
+            return doc
 
 
     @property
