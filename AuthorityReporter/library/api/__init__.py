@@ -4,7 +4,7 @@ from flask.ext.restful import reqparse
 from flask.ext import restful
 from .. import models
 from AuthorityReporter.library import solr
-from solrcloudpy import SearchOptions
+import solrcloudpy
 
 
 def register_resources(api):
@@ -29,7 +29,7 @@ def get_request_parser():
     parser = reqparse.RequestParser()
     parser.add_argument(u'limit', type=int, help=u'Limit', default=10)
     parser.add_argument(u'offset', type=int, help=u'Offset', default=0)
-    parser.add_argument(u'for_api', type=bool, help=u"For Api: don't touch for now!", default=True)
+    parser.add_argument(u'q', type=str, help=u'The Query', default=None)
     return parser
 
 
@@ -48,6 +48,7 @@ class WikiTopics(restful.Resource):
         :rtype: dict
         """
         request_args = get_request_parser().parse_args()
+        
         return {
             u'wiki_id': wiki_id,
             u'offset': request_args[u'offset'],
@@ -107,7 +108,7 @@ class Hubs(restful.Resource):
     urls = [u"/api/hubs"]
 
     def get(self):
-        return dict(solr.iterate_per_facetfield_value(solr.global_collection(), SearchOptions({'q': '*:*'}), 'hub_s'))
+        return dict(solr.iterate_per_facetfield_value(solr.global_collection(), solrcloudpy.SearchOptions({'q': '*:*'}), 'hub_s'))
 
 
 class Wiki(restful.Resource):
@@ -127,6 +128,20 @@ class Wiki(restful.Resource):
         return models.WikiModel(wiki_id).get_row()
 
 
+class Wikis(restful.Resource):
+
+    urls = [u"/api/wikis/", u"/api/wikis"]
+
+    def get(self):
+        """
+        Queries for all wikis given a search query
+
+        :return: the response dict
+        :rtype: dict
+        """
+        return models.WikiModel.search(**get_request_parser().parse_args())
+
+
 class WikiDetails(restful.Resource):
 
     urls = [u"/api/wiki/<int:wiki_id>/details"]
@@ -141,6 +156,20 @@ class UserDetails(restful.Resource):
 
     def get(self, user_id):
         return models.UserModel(user_id).api_data
+    
+
+class Topics(restful.Resource):
+    
+    urls = [u"/api/topics/", u"/api/topics"]
+    
+    def get(self):
+        """
+        Queries for all topics given a search query
+
+        :return: the response dict
+        :rtype: dict
+        """
+        return models.TopicModel.search(**get_request_parser().parse_args())
 
 
 class TopicPages(restful.Resource):
@@ -186,6 +215,29 @@ class TopicWikis(restful.Resource):
             u'limit': request_args[u'limit'],
             u'offset': request_args[u'offset'],
             u'wikis': models.TopicModel(topic).get_wikis(**request_args)
+        }
+
+
+class TopicUsers(restful.Resource):
+
+    urls = [u"/api/topic/<string:topic>/users", u"/api/topic/<string:topic>/users/"]
+
+    def get(self, topic):
+        """
+        Access a JSON response for the top users for the given topic
+
+        :param topic: the topic in question
+        :type topic: str
+
+        :return: the response dict
+        :rtype: dict
+        """
+        request_args = get_request_parser().parse_args()
+        return {
+            u'topic': topic,
+            u'limit': request_args[u'limit'],
+            u'offset': request_args[u'offset'],
+            u'users': models.TopicModel(topic).get_users(**request_args)
         }
 
 
@@ -334,8 +386,8 @@ class User(restful.Resource):
 
     def get(self, user_id):
         """
-        Access a JSON response representing data for the user, including userity.
-        Scaled userity is for comparing users
+        Access a JSON response representing data for the user, including authority.
+        Scaled authority is for comparing users
 
         :param user_id: the string value of the user
         :type user_id: int
@@ -344,6 +396,20 @@ class User(restful.Resource):
         :rtype: dict
         """
         return models.UserModel(user_id).get_row()
+
+
+class Users(restful.Resource):
+
+    urls = [u"/api/users/", u"/api/users"]
+
+    def get(self):
+        """
+        Queries for all users given a search query
+
+        :return: the response dict
+        :rtype: dict
+        """
+        return models.UserModel.search(**get_request_parser().parse_args())
 
 
 class PageUsers(restful.Resource):

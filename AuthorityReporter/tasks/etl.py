@@ -70,10 +70,6 @@ def get_contributing_authors(wiki_id, api_url, title_object, title_revs):
     :type: tuple
     """
 
-    # create an independent session for this request
-    requests.Session().mount(u'http://',
-                             requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1, pool_block=True))
-
     doc_id = "%s_%s" % (str(wiki_id), title_object[u'pageid'])
     top_authors = []
     if len(title_revs) == 1 and u'user' in title_revs[0]:

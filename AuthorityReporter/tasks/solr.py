@@ -32,7 +32,7 @@ def add_with_metadata(wiki_data, docs):
     params = {
         u'controller': u'WikiaSearchIndexerController',
         u'method': u'get',
-        u'service': u'Metadata',
+        u'service': u'All',
         u'ids': u'|'.join([doc['id'] for doc in docs if doc])  # doc can be none here LOL
     }
 
@@ -44,13 +44,17 @@ def add_with_metadata(wiki_data, docs):
 
     user_dict = {}
 
-    for doc in docs:
+    for all_doc in docs:
         for resp in response.get('contents', []):
             if 'id' not in resp:
                 continue
 
             if doc['id'] == resp['id']:
-                doc.update(resp)
+                doc.update(dict(
+                    attr_title_en=resp['title_en'],
+                    url_s=resp['url'],
+                    hub_s=resp['hub']
+                ))
 
         users_txt = []
         user_ids_is = []
@@ -215,7 +219,7 @@ def ingest_data(wiki_id):
     for key in api_data['stats'].keys():
         wiki_data['%s_i' % key] = {'set': api_data['stats'][key]}
 
-    wiki_api_data = requests.get(u'%swikia.php',
+    wiki_api_data = requests.get(u'%swikia.php' % (api_data[u'url']),
                                  params={u'method': u'getForWiki',
                                          u'service': u'CrossWikiCore',
                                          u'controller': u'WikiaSearchIndexerController'}).json()[u'contents']
@@ -273,7 +277,9 @@ def ingest_data(wiki_id):
 
     all_user_tuples = []
     for future in grouped_futures:
-        map(all_user_tuples.append, future.get()[0])
+        result = future.get()
+        map(all_user_tuples.extend, result)
+
     all_user_tuples = list(set(all_user_tuples))
 
     # assign the unique user ids to the first variable, and the unique usernames to the second
@@ -304,7 +310,7 @@ def ingest_data(wiki_id):
     future_result_len = len(futures.results)
     while not futures.ready():
         print "Progress: (%d/%d)" % (futures.completed_count(), future_result_len)
-        sleep(30)
+        sleep(2)
 
     user_docs = futures.get()
 
@@ -426,7 +432,8 @@ def aggregate_global_topic(topic):
         if 'user_names_ss' in doc:
             for user_name in doc['user_names_ss']:
                 all_user_name_dict[user_name] = True
-        all_wikis.append(doc['wiki_id_i'])
+        if 'wiki_id_i' in doc:
+            all_wikis.append(doc['wiki_id_i'])
 
     total_authority = sum(total_authorities)
 

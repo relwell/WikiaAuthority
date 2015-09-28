@@ -190,8 +190,6 @@ def main():
     parser.add_argument(u'--app-port', dest=u'app_port', action=u'store', default=5000, type=int,
                         help=u"App port")
     args = parser.parse_args()
-
-    api.register_args(args)
     app.debug = True
     app_api = restful.Api(app)
     api.register_resources(app_api)

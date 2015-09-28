@@ -10,4 +10,4 @@ ETL_MIN_CONTRIB_PCT = 0.01  # the bottom threshold for contributions
 ETL_SMOOTHING = 0.001  # smoothing for zero values
 
 # Solr Params
-SOLR_HOSTS = ['localhost:8983']
+SOLR_HOSTS = ['localhost:8983', 'localhost:7574']

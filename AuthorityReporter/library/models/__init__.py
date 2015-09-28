@@ -5,6 +5,11 @@ from AuthorityReporter.library import solr
 from celery import shared_task
 
 
+def sans_q(dict):
+    del dict['q']
+    return dict
+
+
 @shared_task
 def get_page_response(tup):
     current_url, ids = tup
@@ -86,6 +91,13 @@ class TopicModel:
                                                  limit=limit,
                                                  offset=offset,
                                                  boost='scaled_authority_f')
+    
+    @staticmethod
+    def search(**kwargs):
+        return solr.get_docs_by_query_with_limit(solr.all_topics_collection(),
+                                                 kwargs['q'],
+                                                 boost='total_authority_f',
+                                                 **sans_q(kwargs))
 
 
 class WikiModel:
@@ -205,17 +217,33 @@ class WikiModel:
         :return: dict of pages
         :rtype: dict
         """
-        return solr.get_all_docs_by_query(solr.collection_for_wiki(self.wiki_id), 'type_s:Page', sort='authority_f')
+        return solr.get_all_docs_by_query(solr.collection_for_wiki(self.wiki_id), 'type_s:Page', sort='authority_f desc')
+
 
     @staticmethod
-    def all_wikis(args):
+    def all_wikis():
         """
         Accesses all wikis from database
 
         :return: dict keying wiki name to ids
         :rtype: dict
         """
-        return solr.get_all_docs_by_query(solr.global_collection(), '*:*', sort='scaled_authority_f')
+        return solr.get_all_docs_by_query(solr.global_collection(), '*:*', sort='scaled_authority_f desc')
+
+
+    @staticmethod
+    def search(**kwargs):
+        """
+        Accesses all wikis from database matching a query
+
+        :return: dict keying wiki name to ids
+        :rtype: dict
+        """
+        solr.debug_requests()
+        return solr.get_docs_by_query_with_limit(solr.global_collection(), 
+                                                 kwargs['q'], 
+                                                 boost='scaled_authority_f',
+                                                 **sans_q(kwargs))
 
     # this is deprecated for now
     def get_workbook(self, num_processes=8):
@@ -405,6 +433,14 @@ class UserModel:
         """
         self._api_data = None
         self.user_id = user_id
+    
+    
+    @staticmethod
+    def search(**kwargs):
+        return solr.get_docs_by_query_with_limit(solr.user_collection(), 
+                                                 kwargs['q'], 
+                                                 boost='scaled_authority_f', 
+                                                 **sans_q(kwargs))
 
 
     def get_pages(self, limit=10, offset=0):
