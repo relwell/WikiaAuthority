@@ -32,7 +32,7 @@ class TopicModel:
         """
         self.topic = topic
 
-    def get_pages(self, limit=10, offset=None):
+    def get_pages(self, limit=10, offset=None, **kwargs):
         """
         Gets most authoritative pages for a topic using Authority DB and Wikia API data
 
@@ -72,7 +72,7 @@ class TopicModel:
                                                  offset=offset,
                                                  boost='scaled_authority_f')
 
-    def get_users(self, limit=10, offset=0):
+    def get_users(self, limit=10, offset=0, **kwargs):
         """
         Gets users for a given topic
 
@@ -91,7 +91,7 @@ class TopicModel:
                                                  limit=limit,
                                                  offset=offset,
                                                  boost='scaled_authority_f')
-    
+
     @staticmethod
     def search(**kwargs):
         return solr.get_docs_by_query_with_limit(solr.all_topics_collection(),
@@ -112,7 +112,6 @@ class WikiModel:
         :type wiki_id: int
         """
         self.wiki_id = wiki_id
-        self.args = args  # stupid di
         self._api_data = None
 
 
@@ -126,7 +125,7 @@ class WikiModel:
         """
         if not self._api_data:
             self._api_data = requests.get(u'http://www.wikia.com/api/v1/Wikis/Details',
-                                          params=dict(ids=self.wiki_id)).json()[u'items'][self.wiki_id]
+                                          params=dict(ids=self.wiki_id)).json()[u'items'][str(self.wiki_id)]
         return self._api_data
 
 
@@ -141,7 +140,7 @@ class WikiModel:
         for doc in solr.get_all_docs_by_query(collection, 'id:%s' % str(self.wiki_id)):
             return doc
 
-    def get_topics(self, limit=10, offset=None):
+    def get_topics(self, limit=10, offset=None, **kwargs):
         """
         Get topics for this wiki
 
@@ -157,7 +156,7 @@ class WikiModel:
         return solr.get_docs_by_query_with_limit(solr.collection_for_wiki(self.wiki_id),
                                                  'type_s:Topic',
                                                  limit=limit,
-                                                 ofset=offset,
+                                                 offset=offset,
                                                  sort='total_authority_f desc')
 
     def get_all_users(self):
@@ -170,8 +169,7 @@ class WikiModel:
 
         return solr.get_all_docs_by_query(solr.wiki_user_collection(), 'wiki_id_i:%s' % self.wiki_id);
 
-
-    def get_users(self, limit=10, offset=None):
+    def get_users(self, limit=10, offset=None, **kwargs):
         """
         Provides the top users for a wiki
 
@@ -183,14 +181,13 @@ class WikiModel:
         :return: list of user dicts
         :rtype: list
         """
+        return solr.get_docs_by_query_with_limit(solr.wiki_user_collection(),
+                                                 'wiki_id_i:%s' % self.wiki_id,
+                                                 limit=limit,
+                                                 offset=offset,
+                                                 sort='total_page_authority_f desc')
 
-        solr.get_docs_by_query_with_limit(solr.wiki_user_collection(),
-                                          'wiki_id_i:%s' % self.wiki_id,
-                                          limit=limit,
-                                          offset=offset,
-                                          sort='total_page_authority_f desc')
-
-    def get_pages(self, limit=10, offset=None):
+    def get_pages(self, limit=10, offset=None, **kwargs):
         """
         Gets most authoritative pages for this wiki
 
@@ -239,9 +236,8 @@ class WikiModel:
         :return: dict keying wiki name to ids
         :rtype: dict
         """
-        solr.debug_requests()
-        return solr.get_docs_by_query_with_limit(solr.global_collection(), 
-                                                 kwargs['q'], 
+        return solr.get_docs_by_query_with_limit(solr.global_collection(),
+                                                 kwargs['q'],
                                                  boost='scaled_authority_f',
                                                  **sans_q(kwargs))
 
@@ -433,13 +429,13 @@ class UserModel:
         """
         self._api_data = None
         self.user_id = user_id
-    
-    
+
+
     @staticmethod
     def search(**kwargs):
-        return solr.get_docs_by_query_with_limit(solr.user_collection(), 
-                                                 kwargs['q'], 
-                                                 boost='scaled_authority_f', 
+        return solr.get_docs_by_query_with_limit(solr.user_collection(),
+                                                 kwargs['q'],
+                                                 boost='scaled_authority_f',
                                                  **sans_q(kwargs))
 
 

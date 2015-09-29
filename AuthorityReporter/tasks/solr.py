@@ -38,22 +38,24 @@ def add_with_metadata(wiki_data, docs):
 
     r = requests.get(u"%swikia.php" % wiki_data['url'], params=params)
     response = r.json()
+    contents = response.get('contents', [])
+    
     author_pages = []
 
     pa = PageAuthorityService()
 
     user_dict = {}
 
-    for all_doc in docs:
-        for resp in response.get('contents', []):
-            if 'id' not in resp:
+    for doc in docs:
+        for search_doc in contents:
+            if 'id' not in search_doc:
                 continue
 
-            if doc['id'] == resp['id']:
+            if doc['id'] == search_doc['id']:
                 doc.update(dict(
-                    attr_title_en=resp['title_en'],
-                    url_s=resp['url'],
-                    hub_s=resp['hub']
+                    attr_title=search_doc['title_en'],
+                    url_s=search_doc['url'],
+                    hub_s=search_doc['hub']
                 ))
 
         users_txt = []
@@ -214,7 +216,9 @@ def ingest_data(wiki_id):
     wiki_data = {
         'id': api_data['id'],
         'wam_f': {'set': api_data['wam_score']},
-        'desc_txt': {'set': api_data['desc']}
+        'title_s': {'set': api_data['title']},
+        'attr_title': {'set': api_data['title']},
+        'attr_desc': {'set': api_data['desc']}
     }
     for key in api_data['stats'].keys():
         wiki_data['%s_i' % key] = {'set': api_data['stats'][key]}

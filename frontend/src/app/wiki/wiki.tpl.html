@@ -1,19 +1,21 @@
-<div class="wiki container">
+<div class="col-md-4 wiki container text-center">
     <div class="row">
-        <div class="col-md-4">
-            <a href="{{wiki_url}}"><img class="img-thumbnail" src="{{image_href}}"></a>
-        </div>
-        <div class="col-md-8">
+        <div class="col-md-12">
             <a href="{{wiki_url}}">{{wiki_title}}</a>
         </div>
     </div>
     <div class="row">
         <div class="col-md-12">
-            <ul class="nav nav-pills">
-                <li role="presentation"><a href="/user/{{id}}/users">Users</a></li>
-                <li role="presentation"><a href="/user/{{id}}/pages">Pages</a></li>
-                <li role="presentation"><a href="/user/{{id}}/topics">Topics</a></li>
-            </ul>
+            <a href="{{wiki_url}}"><img class="img-thumbnail" src="{{image_href}}"></a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <p>
+                <a ng-href="#/wiki/{{id}}/users">Users</a> |
+                <a ng-href="#/wiki/{{id}}/pages">Pages</a> |
+                <a ng-href="#/wiki/{{id}}/topics">Topics</a>
+            </p>
         </div>
     </div>
 </div>

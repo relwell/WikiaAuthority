@@ -1,16 +1,16 @@
-<div class="topic container">
+<div class="topic col-md-4 container">
     <div class="row">
-        <div class="col-md-12">
-            {{topic}}
+        <div class="col-md-12 text-center">
+            <p><b>{{topic.topic_s}}</b></p>
         </div>
     </div>
-    <div class="row">
+    <div class="row text-center">
         <div class="col-md-12">
-            <ul class="nav nav-pills">
-                <li role="presentation"><a href="/topic/{{topic}}/wikis">Wikis</a></li>
-                <li role="presentation"><a href="/topic/{{topic}}/pages">Pages</a></li>
-                <li role="presentation"><a href="/topic/{{topic}}/users">Users</a></li>
-            </ul>
+            <p>
+                <a ng-href="#/topic/{{topic.topic_s}}/wikis">Wikis</a> |
+                <a ng-href="#/topic/{{topic.topic_s}}/pages">Pages</a> |
+                <a ng-href="#/topic/{{topic.topic_s}}/users">Users</a>
+            </p>
         </div>
     </div>
 </div>

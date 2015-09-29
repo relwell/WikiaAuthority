@@ -205,7 +205,6 @@ def get_result_by_query(collection, query, limit=None, offset=None, sort=None, f
     se.commonparams.rows(limit)
     se.commonparams.start(offset)
     response = collection.search(se)
-    print response
     return response.result['response']
 
 

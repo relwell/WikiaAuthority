@@ -2,8 +2,7 @@ import sys
 import inspect
 from flask.ext.restful import reqparse
 from flask.ext import restful
-from .. import models
-from AuthorityReporter.library import solr
+from AuthorityReporter.library import solr, models
 import solrcloudpy
 
 
@@ -48,7 +47,7 @@ class WikiTopics(restful.Resource):
         :rtype: dict
         """
         request_args = get_request_parser().parse_args()
-        
+
         return {
             u'wiki_id': wiki_id,
             u'offset': request_args[u'offset'],
@@ -152,16 +151,16 @@ class WikiDetails(restful.Resource):
 
 class UserDetails(restful.Resource):
 
-    urls = [u"/api/wiki/<int:user_id>/details"]
+    urls = [u"/api/user/<string:user_id>/details"]
 
     def get(self, user_id):
-        return models.UserModel(user_id).api_data
-    
+        return models.UserModel(user_id.split('_').pop()).api_data
+
 
 class Topics(restful.Resource):
-    
+
     urls = [u"/api/topics/", u"/api/topics"]
-    
+
     def get(self):
         """
         Queries for all topics given a search query
@@ -357,7 +356,7 @@ class UserWikiTopics(restful.Resource):
         u"/api/user/<int:user_id>/topics/wiki/<int:wiki_id>/",
         u"/api/wiki/<int:wiki_id>/topics/user/<int:user_id>/",
         u"/api/wiki/<int:wiki_id>/topics/user/<int:user_id>",
-    ]
+        ]
 
     def get(self, user_id, wiki_id):
         """

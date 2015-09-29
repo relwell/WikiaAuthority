@@ -1,4 +1,4 @@
-angular.module( 'wikiaAuthority.wiki_users', [
+angular.module( 'wikiaAuthority.topic_users', [
   'ui.router',
   'wikiaAuthority.topic'
 ])
@@ -39,13 +39,10 @@ angular.module( 'wikiaAuthority.wiki_users', [
  */
 .controller( 'TopicUsersCtrl',
   ['$scope', '$stateParams', 'TopicService', 'UserService', 'TopicUsersService',
-    function WikiUsersController( $scope, $stateParams, TopicService, UserService, TopicUsersService ) {
+    function TopicUsersController( $scope, $stateParams, TopicService, UserService, TopicUsersService ) {
       $scope.topic = $stateParams.topic;
-      WikiService.with_details_for_topic($scope.topic, function(data) {
-        $scope.topic = data;
-      });
 
-      WikiUsersService.with_users_for_topic($scope.topic, function(data) {
+      TopicUsersService.with_users_for_topic($scope.topic, function(data) {
         $scope.users = data.users;
 
         $scope.user_to_details = {};

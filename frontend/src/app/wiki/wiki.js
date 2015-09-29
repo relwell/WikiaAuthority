@@ -45,7 +45,6 @@ angular.module( 'wikiaAuthority.wiki', [
   ['$scope', '$stateParams', 'WikiService',
   function WikisController($scope, $stateParams, WikiService) {
     WikiService.with_search_results_for_wiki({q: $stateParams.q}, function(response) {
-      console.log(response);
       $scope.wikis = response;
     });
 }])
