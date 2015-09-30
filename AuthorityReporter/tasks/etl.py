@@ -16,6 +16,7 @@ from lxml.etree import ParserError
 from pygraph.classes.digraph import digraph
 from pygraph.algorithms.pagerank import pagerank
 from pygraph.classes.exceptions import AdditionError
+from . import get_with_backoff
 
 
 @shared_task
@@ -373,8 +374,12 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
         time.sleep(1)
 
     print "Getting contributing authors for titles"
-    title_to_authors = group(get_contributing_authors.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
-                             for title_obj in all_titles)().get()
+    futures = group(get_contributing_authors.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
+                    for title_obj in all_titles)()
+    title_to_authors = get_with_backoff(futures, [])
+    if not title_to_authors:
+        print "Failed to get title to authors. Connection failure?"
+        return
 
     contribs_scaler = MinMaxScaler([author[u'contribs']
                                     for title, authors in title_to_authors
@@ -428,7 +433,9 @@ def etl(wiki_id):
     print u"Got %d titles" % len(all_titles)
 
     results = group(get_all_revisions.s(api_url, title) for title in all_titles)()
-    all_revisions = results.get()
+    all_revisions = get_with_backoff(results, [])
+    if not results:
+        print "No revisions, probably connection error"
 
     print u"%d Revisions" % sum([len(revs) for title, revs in all_revisions])
     all_revisions = dict(all_revisions)

@@ -6,6 +6,7 @@ from itertools import izip_longest
 from AuthorityReporter.library import solr, MinMaxScaler
 from time import sleep
 from solrcloudpy import SearchOptions
+from . import get_with_backoff
 import requests
 
 
@@ -281,10 +282,13 @@ def ingest_data(wiki_id):
 
     all_user_tuples = []
     for future in grouped_futures:
-        result = future.get()
+        result = get_with_backoff(future, [])
         map(all_user_tuples.extend, result)
 
     all_user_tuples = list(set(all_user_tuples))
+    if not all_user_tuples:
+        print "Empty user tuples, bailing"
+        return
 
     # assign the unique user ids to the first variable, and the unique usernames to the second
     all_user_ids, all_users = zip(*all_user_tuples)
@@ -316,7 +320,10 @@ def ingest_data(wiki_id):
         print "Progress: (%d/%d)" % (futures.completed_count(), future_result_len)
         sleep(2)
 
-    user_docs = futures.get()
+    user_docs = get_with_backoff(futures, [])
+    if not user_docs:
+        print "User docs was empty. Possibly connection problems."
+        return
 
     authority_scaler = MinMaxScaler([doc['total_page_authority_f']['set'] for doc in user_docs])
     contribs_scaler = MinMaxScaler([doc['total_contribs_f']['set'] for doc in user_docs])
@@ -339,9 +346,13 @@ def ingest_data(wiki_id):
     while not futures.ready():
         if counter % 5 == 0:
             print "Progress: (%d/%d)" % (futures.completed_count(), future_result_len)
-        sleep(1)
+        sleep(2)
         counter += 1
-    topic_docs = futures.get()
+    topic_docs = get_with_backoff(futures, [])
+    if not topic_docs:
+        print "No topics, probably a connection error"
+        return
+
     collection.add(topic_docs)
     collection.commit()
 
@@ -471,7 +482,7 @@ def analyze_topics_globally():
         print "Progress: (%d/%d)" % (futures.completed_count(), len(futures.results))
         sleep(2)
 
-    collection.add(futures.get())
+    collection.add(get_with_backoff(futures, []))
     collection.commit()
 
 
