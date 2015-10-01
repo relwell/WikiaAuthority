@@ -361,7 +361,7 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
     for i in range(0, all_title_len, 25):
         print "%d/%d" % (i, all_title_len)
         group_map.append(group(prime_edit_distance.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
-                               for title_obj in all_titles[i:i+100])())
+                               for title_obj in all_titles[i:i+100] if title_obj[u'title'] in all_revisions)())
 
     print "Waiting on initialization to complete"
     readies = len(filter(lambda x: x.ready(), group_map))
@@ -375,7 +375,7 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
 
     print "Getting contributing authors for titles"
     futures = group(get_contributing_authors.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
-                    for title_obj in all_titles)()
+                    for title_obj in all_titles if title_obj[u'title'] in all_revisions)()
     title_to_authors = get_with_backoff(futures, [])
     if not title_to_authors:
         print "Failed to get title to authors. Connection failure?"
@@ -433,6 +433,10 @@ def etl(wiki_id):
     print u"Got %d titles" % len(all_titles)
 
     results = group(get_all_revisions.s(api_url, title) for title in all_titles)()
+    result_len = len(results)
+    while not results.ready():
+        print "%d / %d" % (results.completed_count(), result_len)
+        time.sleep(2)
     all_revisions = get_with_backoff(results, [])
     if not results:
         print "No revisions, probably connection error"
