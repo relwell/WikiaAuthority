@@ -52,9 +52,10 @@ def add_with_metadata(wiki_data, docs):
             if 'id' not in search_doc:
                 continue
 
-            if doc['id'] == search_doc['id']:
+            if doc['id'] == search_doc['pageid']['set']:
                 doc.update(dict(
                     attr_title=search_doc['title_en'],
+                    title_s=search_doc['title_en'],
                     url_s=search_doc['url'],
                     hub_s=search_doc['hub']
                 ))
