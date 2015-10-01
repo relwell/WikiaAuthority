@@ -200,7 +200,6 @@ def edit_distance(wiki_id, api_url, title_object, earlier_revision, later_revisi
         print resp.content
         return 0
     resp.close()
-    time.sleep(0.025)  # prophylactic throttling
     revision = (response.get(u'query', {})
                         .get(u'pages', {0: {}})
                         .get(unicode(title_object[u'pageid']), {})
