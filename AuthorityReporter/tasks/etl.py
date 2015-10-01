@@ -378,6 +378,14 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
     print "Getting contributing authors for titles"
     futures = group(get_contributing_authors.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
                     for title_obj in all_titles if title_obj[u'title'] in all_revisions)()
+    future_len = len(futures)
+    cc = futures.completed_count()
+    while not futures.ready():
+        new_cc = futures.completed_count()
+        if new_cc > cc:
+            print "%d/%d" % (new_cc, future_len)
+        cc = new_cc
+        time.sleep(1)
     title_to_authors = get_with_backoff(futures, [])
     if not title_to_authors:
         print "Failed to get title to authors. Connection failure?"
