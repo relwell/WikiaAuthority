@@ -330,11 +330,14 @@ def get_all_revisions(api_url, title_object):
 
 @shared_task
 def prime_edit_distance(wiki_id, api_url, title_obj, title_revs):
-    return group(
-        edit_distance.s(wiki_id, api_url, title_obj, title_revs[i-1][u'revid'], title_revs[i][u'revid'])
-        for j in range(1, len(title_revs))
-        for i in range(j, len(title_revs))
-    )()
+
+    revids_dict = {}
+    for i in range(1, len(title_revs)):
+        for j in range(i, len(title_revs)):
+            revids_dict[(title_revs[i-1][u'revid'], title_revs[i][u'revid'])] = 1
+
+
+    return [edit_distance(wiki_id, api_url, title_obj, rev_1, rev_2) for rev_1, rev_2 in revids_dict.keys()]
 
 
 def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
