@@ -6,7 +6,7 @@ from itertools import izip_longest
 from AuthorityReporter.library import solr, MinMaxScaler
 from time import sleep
 from solrcloudpy import SearchOptions
-from . import get_with_backoff
+from AuthorityReporter.tasks import get_with_backoff
 import requests
 
 

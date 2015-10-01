@@ -16,7 +16,7 @@ from lxml.etree import ParserError
 from pygraph.classes.digraph import digraph
 from pygraph.algorithms.pagerank import pagerank
 from pygraph.classes.exceptions import AdditionError
-from . import get_with_backoff
+from AuthorityReporter.tasks import get_with_backoff
 
 
 @shared_task
