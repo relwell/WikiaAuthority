@@ -413,73 +413,64 @@ class Users(restful.Resource):
 
 class PageUsers(restful.Resource):
 
-    urls = [u"/api/wiki/<int:wiki_id>/article/<int:article_id>/users",
-            u"/api/wiki/<int:wiki_id>/article/<int:article_id>/users/"]
+    urls = [u"/api/page/<string:doc_id>/users",
+            u"/api/page/<string:doc_id>/users/"]
 
-    def get(self, wiki_id, article_id):
+    def get(self, doc_id):
         """
         Access a JSON response for the top users for the given wiki
 
-        :param wiki_id: the ID of the wiki
-        :type wiki_id: int
-        :param article_id: the id of the article
-        :type article_id: int
+        :param doc_id: the id of the document
+        :type doc_id: str
 
         :return: the response dict
         :rtype: dict
         """
         request_args = get_request_parser().parse_args()
         return {
-            u'wiki_id': wiki_id,
-            u'article_id': article_id,
             u'offset': request_args[u'offset'],
             u'limit': request_args[u'limit'],
-            u'users': models.PageModel(wiki_id, article_id).get_users(**request_args)
+            u'users': models.PageModel(doc_id).get_users(**request_args)
         }
 
 
 class PageTopics(restful.Resource):
 
-    urls = [u"/api/wiki/<int:wiki_id>/article/<int:article_id>/topics",
-            u"/api/wiki/<int:wiki_id>/article/<int:article_id>/topics/"]
+    urls = [u"/api/page/<string:doc_id>/topics",
+            u"/api//page/<string:doc_id>/topics/"]
 
-    def get(self, wiki_id, article_id):
+    def get(self, doc_id):
         """
         Access a JSON response for the top topics for the given page, sorted by total userity
 
-        :param wiki_id: the ID of the wiki
-        :type wiki_id: int
-        :param article_id: the id of the article
-        :type article_id: int
+        :param doc_id: the id of the document
+        :type doc_id: str
 
         :return: the response dict
         :rtype: dict
         """
         request_args = get_request_parser().parse_args()
         return {
-            u'article_id': article_id,
-            u'wiki_id': wiki_id,
             u'offset': request_args[u'offset'],
             u'limit': request_args[u'limit'],
-            u'topics': models.PageModel(wiki_id, article_id).get_topics(**request_args)
+            u'topics': models.PageModel(doc_id).get_topics(**request_args)
         }
 
 
 class Page(restful.Resource):
 
-    urls = [u"/api/wiki/<int:wiki_id>/article/<int:article_id>",
-            u"/api/wiki/<int:wiki_id>/article/<int:article_id>/"]
+    urls = [u"/api/page/<string:doc_id>/details",
+            u"/api/page/<string:doc_id>/details/"]
 
-    def get(self, wiki_id, article_id):
+    def get(self, doc_id):
         """
         Access a JSON response representing the page, including userity
 
-        :param wiki_id: the ID of the wiki
-        :type wiki_id: int
-        :param article_id: the id of the article
-        :type article_id: int
+        :param doc_id: the id of the document
+        :type doc_id: str
 
         :return: the response dict
         :rtype: dict
         """
-        return models.PageModel(wiki_id, article_id).get_row()
+        wiki_id, article_id = doc_id.split('_')
+        return models.PageModel(doc_id).get_row()

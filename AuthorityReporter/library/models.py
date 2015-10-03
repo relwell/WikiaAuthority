@@ -341,18 +341,16 @@ class PageModel:
     Logic for a given page
     """
 
-    def __init__(self, wiki_id, page_id):
+    def __init__(self, doc_id):
         """
         Init method
 
-        :param wiki_id: the wiki id
-        :type wiki_id: int
-        :param page_id: the id of the page
-        :type page_id: int
+        :param doc_id: id of the document
+        :type doc_id: str
         """
-        self.page_id = page_id
-        self.wiki_id = wiki_id
-        self.wiki = WikiModel(wiki_id, args)
+        self.doc_id = doc_id
+        self.wiki_id, self.page_id = doc_id.split('_')
+        self.wiki = WikiModel(self.wiki_id)
         self._api_data = None
 
     @property
@@ -383,7 +381,7 @@ class PageModel:
 
         return solr.get_docs_by_query_with_limit(
             solr.collection_for_wiki(self.wiki_id),
-            'type_s:PageUser AND doc_id_s:%s_%s' % (str(self.wiki_id), str(self.page_id)),
+            'type_s:PageUser AND doc_id_s:%s' % (self.doc_id),
             limit=limit,
             offset=offset,
             boost='contribs_f'
@@ -411,7 +409,7 @@ class PageModel:
         :rtype: dict
         """
         for row in solr.get_all_docs_by_query(solr.all_pages_collection(),
-                                              'id:%s_%s' % (str(self.page_id), str(self.wiki_id))):
+                                              'id:%s' % self.doc_id):
             return row
 
 

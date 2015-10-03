@@ -22,7 +22,7 @@ angular.module( 'wikiaAuthority.user', [
     };
     
     var with_search_results_for_user = function with_search_results_for_user(search_params, callable) {
-      return $http.get('/api/wikis/', {params:search_params}).success(callable);
+      return $http.get('/api/users/', {params:search_params}).success(callable);
     };
 
     return {
@@ -42,7 +42,7 @@ angular.module( 'wikiaAuthority.user', [
 .controller( 'UsersCtrl',
     ['$scope', '$stateParams', 'UserService',
     function UsersController($scope, $stateParams, UserService) {
-      UserService.with_search_result_for_user({q: $stateParams.q},
+      UserService.with_search_results_for_user({q: $stateParams.q},
       function(users) {
         $scope.users = users;
       });

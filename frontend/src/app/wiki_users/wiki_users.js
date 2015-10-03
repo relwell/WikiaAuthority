@@ -41,7 +41,7 @@ angular.module( 'wikiaAuthority.wiki_users', [
 
         $scope.user_to_details = {};
         $scope.users.forEach(function(user){
-          UsersService.with_details_for_user(user.user_id_i, function(data) {
+          UserService.with_details_for_user(user.user_id_i, function(data) {
             $scope.user_to_details[user.user_id_i] = data;
           });
         });

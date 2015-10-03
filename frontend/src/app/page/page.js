@@ -36,7 +36,7 @@ angular.module( 'wikiaAuthority.page', [
     function PageDirectiveController($scope, PageService) {
       PageService.with_details_for_page($scope.id,
       function(data) {
-        $scope.page_data = data.items[0];
+        $scope.page = data;
       });
 }])
 .controller( 'PagesCtrl',

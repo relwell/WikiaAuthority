@@ -1,4 +1,4 @@
-angular.module( 'wikiaAuthority.wiki_users', [
+angular.module( 'wikiaAuthority.topic_wikis', [
   'ui.router',
   'wikiaAuthority.topic'
 ])

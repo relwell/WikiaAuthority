@@ -26,6 +26,10 @@ def bootstrap_celery(app):
     # importing here because some tasks refer to app, lol
     from AuthorityReporter.tasks.etl import links_for_page, get_contributing_authors, edit_distance, get_all_revisions
     from AuthorityReporter.tasks.etl import get_title_top_authors, set_page_key
+    from AuthorityReporter.tasks.solr import add_with_metadata, build_wiki_user_doc, get_wiki_topic_doc
+    from AuthorityReporter.tasks.solr import analyze_pages_globally, analyze_users_globally, analyze_wikis_globally
+    from AuthorityReporter.tasks.solr import aggregate_global_topic, analyze_topics_globally
+    from AuthorityReporter.tasks.solr import analyze_all_user_pages_globally
     celery = Celery(app.import_name, broker=app.config['CELERY_BROKER_URL'])
     celery.conf.update(app.config)
     TaskBase = celery.Task

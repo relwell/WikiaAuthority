@@ -8,6 +8,7 @@ from time import sleep
 from solrcloudpy import SearchOptions
 from AuthorityReporter.tasks import get_with_backoff
 import requests
+import sys
 
 
 def iter_grouper(n, iterable, fillvalue=None):
@@ -34,7 +35,7 @@ def add_with_metadata(wiki_data, docs):
         u'controller': u'WikiaSearchIndexerController',
         u'method': u'get',
         u'service': u'All',
-        u'ids': u'|'.join([doc['id'] for doc in docs if doc])  # doc can be none here LOL
+        u'ids': u'|'.join([doc['id'].split('_').pop() for doc in docs if doc])  # doc can be none here LOL
     }
 
     r = requests.get(u"%swikia.php" % wiki_data['url'], params=params)
@@ -52,7 +53,7 @@ def add_with_metadata(wiki_data, docs):
             if 'id' not in search_doc:
                 continue
 
-            if doc['id'] == search_doc['pageid']['set']:
+            if doc['id'] == search_doc['id']:
                 doc.update(dict(
                     attr_title=search_doc['title_en'],
                     title_s=search_doc['title_en'],
@@ -402,10 +403,14 @@ def analyze_users_globally():
                                       authorities_fs={'set': []},
                                       total_authority_f={'set': 0},
                                       scaled_authority_f={'set': 0})
-        map(id_to_docs[doc_id]['attr_entities']['set'].append, user_doc['attr_entities'])
-        id_to_docs[doc_id]['wikis_is']['set'].append(user_doc['wiki_id_i'])
-        id_to_docs[doc_id]['attr_wikis']['set'].append(user_doc['wiki_name_txt'])
-        id_to_docs[doc_id]['authorities_fs']['set'].append(user_doc['total_page_authority_f'])
+
+        try:
+            map(id_to_docs[doc_id]['attr_entities']['set'].append, user_doc['attr_entities'])
+            id_to_docs[doc_id]['wikis_is']['set'].append(user_doc['wiki_id_i'])
+            id_to_docs[doc_id]['attr_wikis']['set'].append(user_doc['wiki_name_txt'])
+            id_to_docs[doc_id]['authorities_fs']['set'].append(user_doc['total_page_authority_f'])
+        except KeyError:
+            pass  # zero fucks
 
     id_to_total_authorities = dict([(uid, sum(doc['authorities_fs']['set'])) for uid, doc in id_to_docs.items()])
     user_scaler = MinMaxScaler(id_to_total_authorities.values())

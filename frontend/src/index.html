@@ -15,7 +15,10 @@
     <script type="text/javascript" src="<%= file %>"></script><% }); %>
   </head>
   <body>
-    <h1 class="text-center">Authority App</h1>
+    <h1 class="text-center">
+        <a ng-href="#" ng-show="!home">Authority App</a>
+        <span ng-show="home">Authority App</span>
+    </h1>
     <div class="container" ui-view="main"></div>
   </body>
 </html>
