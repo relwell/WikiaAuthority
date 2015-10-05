@@ -8,7 +8,7 @@ from time import sleep
 from solrcloudpy import SearchOptions
 from AuthorityReporter.tasks import get_with_backoff
 import requests
-import sys
+from requests.exceptions import ReadTimeout
 
 
 def iter_grouper(n, iterable, fillvalue=None):
@@ -433,10 +433,17 @@ def analyze_wikis_globally():
     for doc in wiki_docs:
         new_docs.append({'id': doc['id'], 'scaled_authority_f': {'set': scaler.scale(doc['total_authority_f'])}})
         if len(new_docs) > 10:
-            wiki_collection.add(new_docs)
-            wiki_collection.commit()
+            try:
+                wiki_collection.add(new_docs)
+            except ReadTimeout:
+                sleep(5)
+                wiki_collection.add(new_docs)
             new_docs = []
-    wiki_collection.add(new_docs)
+    try:
+        wiki_collection.add(new_docs)
+    except ReadTimeout:
+        sleep(5)
+        wiki_collection.add(new_docs)
     wiki_collection.commit()
         
     
