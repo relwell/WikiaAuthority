@@ -7,7 +7,7 @@ DEFAULT_DOCSIZE = 50
 
 
 def connection():
-    return SolrConnection(AuthorityReporter.app.app.config['SOLR_HOSTS'])
+    return SolrConnection(AuthorityReporter.app.app.config['SOLR_HOSTS'], timeout=30)
 
 
 def collection_for_wiki(wiki_id):
