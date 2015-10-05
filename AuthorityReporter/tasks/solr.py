@@ -437,13 +437,19 @@ def analyze_wikis_globally():
                 wiki_collection.add(new_docs)
             except ReadTimeout:
                 sleep(5)
-                wiki_collection.add(new_docs)
+                try:
+                    wiki_collection.add(new_docs)
+                except ReadTimeout:
+                    pass
             new_docs = []
     try:
         wiki_collection.add(new_docs)
     except ReadTimeout:
         sleep(5)
-        wiki_collection.add(new_docs)
+        try:
+            wiki_collection.add(new_docs)
+        except ReadTimeout:
+            pass
     wiki_collection.commit()
         
     
