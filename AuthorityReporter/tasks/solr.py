@@ -432,8 +432,14 @@ def analyze_wikis_globally():
     new_docs = []
     for doc in wiki_docs:
         new_docs.append({'id': doc['id'], 'scaled_authority_f': {'set': scaler.scale(doc['total_authority_f'])}})
+        if len(new_docs) > 10:
+            wiki_collection.add(new_docs)
+            wiki_collection.commit()
+            new_docs = []
     wiki_collection.add(new_docs)
     wiki_collection.commit()
+        
+    
 
 
 @shared_task
