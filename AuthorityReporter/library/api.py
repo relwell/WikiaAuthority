@@ -107,7 +107,9 @@ class Hubs(restful.Resource):
     urls = [u"/api/hubs"]
 
     def get(self):
-        return dict(solr.iterate_per_facetfield_value(solr.global_collection(), solrcloudpy.SearchOptions({'q': '*:*'}), 'hub_s'))
+        return [dict(hub=hub, count=count) for hub, count
+                in solr.iterate_per_facetfield_value(solr.global_collection(),
+                                                     solrcloudpy.SearchOptions({'q': '*:*'}), 'hub_s')]
 
 
 class Wiki(restful.Resource):

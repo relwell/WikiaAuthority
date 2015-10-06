@@ -1,0 +1,10 @@
+<div id="hubs" class="container">
+    <div class="row">
+        <div class="col-md-1" ng-repeat="hub in hubs">
+            <label>
+                <input type="checkbox" value="{{hub}}" checked="checked" ng-model="hub_data[hub]">
+                {{hub}}
+            </label>
+        </div>
+    </div>
+</div>
