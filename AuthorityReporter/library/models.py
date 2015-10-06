@@ -18,6 +18,8 @@ def get_page_response(tup):
 
 
 class TopicModel:
+    
+    fields = ['id', 'topic_s']
 
     """
     Provides logic for interacting with a given topic
@@ -50,7 +52,8 @@ class TopicModel:
                                                  self.topic,
                                                  limit=limit,
                                                  offset=offset,
-                                                 boost='scaled_authority_f')
+                                                 boost='scaled_authority_f',
+                                                 fields=','.join(self.fields))
 
     def get_wikis(self, limit=10, offset=0):
         """
@@ -70,7 +73,8 @@ class TopicModel:
                                                  self.topic,
                                                  limit=limit,
                                                  offset=offset,
-                                                 boost='scaled_authority_f')
+                                                 boost='scaled_authority_f',
+                                                 fields=','.join(self.fields))
 
     def get_users(self, limit=10, offset=0, **kwargs):
         """
@@ -90,17 +94,22 @@ class TopicModel:
                                                  self.topic,
                                                  limit=limit,
                                                  offset=offset,
-                                                 boost='scaled_authority_f')
+                                                 boost='scaled_authority_f',
+                                                 fields=','.join(self.fields))
 
     @staticmethod
     def search(**kwargs):
         return solr.get_docs_by_query_with_limit(solr.all_topics_collection(),
                                                  kwargs['q'],
                                                  boost='total_authority_f',
+                                                 fields=','.join(TopicModel.fields),
                                                  **sans_q(kwargs))
 
 
 class WikiModel:
+    
+    fields = ['id', 'title_s', 'url_s']
+    
     """
     Logic for a given wiki
     """
@@ -137,7 +146,8 @@ class WikiModel:
         :return: a dict representing the row and its column titles
         """
         collection = solr.global_collection()
-        for doc in solr.get_all_docs_by_query(collection, 'id:%s' % str(self.wiki_id)):
+        for doc in solr.get_all_docs_by_query(collection, 'id:%s' % str(self.wiki_id),
+                                              fields=','.join(self.fields)):
             return doc
 
     def get_topics(self, limit=10, offset=None, **kwargs):
@@ -157,7 +167,8 @@ class WikiModel:
                                                  'type_s:Topic',
                                                  limit=limit,
                                                  offset=offset,
-                                                 sort='total_authority_f desc')
+                                                 sort='total_authority_f desc',
+                                                 fields=','.join(self.fields))
 
     def get_all_users(self):
         """
@@ -167,7 +178,8 @@ class WikiModel:
         :rtype: collections.OrderedDict
         """
 
-        return solr.get_all_docs_by_query(solr.wiki_user_collection(), 'wiki_id_i:%s' % self.wiki_id);
+        return solr.get_all_docs_by_query(solr.wiki_user_collection(), 'wiki_id_i:%s' % self.wiki_id,
+                                          fields=','.join(self.fields))
 
     def get_users(self, limit=10, offset=None, **kwargs):
         """
@@ -185,7 +197,8 @@ class WikiModel:
                                                  'wiki_id_i:%s' % self.wiki_id,
                                                  limit=limit,
                                                  offset=offset,
-                                                 sort='total_page_authority_f desc')
+                                                 sort='total_page_authority_f desc',
+                                                 fields=','.join(self.fields))
 
     def get_pages(self, limit=10, offset=None, **kwargs):
         """
@@ -204,8 +217,8 @@ class WikiModel:
                                                  'type_s:Page',
                                                  limit=limit,
                                                  offset=offset,
-                                                 sort='authority_f desc')
-
+                                                 sort='authority_f desc',
+                                                 fields=','.join(self.fields))
 
     def get_all_pages(self):
         """
@@ -214,7 +227,10 @@ class WikiModel:
         :return: dict of pages
         :rtype: dict
         """
-        return solr.get_all_docs_by_query(solr.collection_for_wiki(self.wiki_id), 'type_s:Page', sort='authority_f desc')
+        return solr.get_all_docs_by_query(solr.collection_for_wiki(self.wiki_id), 
+                                          'type_s:Page', 
+                                          sort='authority_f desc',
+                                          fields=','.join(self.fields))
 
 
     @staticmethod
@@ -225,8 +241,10 @@ class WikiModel:
         :return: dict keying wiki name to ids
         :rtype: dict
         """
-        return solr.get_all_docs_by_query(solr.global_collection(), '*:*', sort='scaled_authority_f desc')
-
+        return solr.get_all_docs_by_query(solr.global_collection(), 
+                                          '*:*', 
+                                          sort='scaled_authority_f desc',
+                                          fields=','.join(WikiModel.fields))
 
     @staticmethod
     def search(**kwargs):
@@ -239,6 +257,7 @@ class WikiModel:
         return solr.get_docs_by_query_with_limit(solr.global_collection(),
                                                  kwargs['q'],
                                                  boost='scaled_authority_f',
+                                                 fields=','.join(WikiModel.fields),
                                                  **sans_q(kwargs))
 
     # this is deprecated for now
@@ -340,6 +359,8 @@ class PageModel:
     """
     Logic for a given page
     """
+    
+    fields = ['id', 'title_s', 'url_s']
 
     def __init__(self, doc_id):
         """
@@ -384,7 +405,8 @@ class PageModel:
             'type_s:PageUser AND doc_id_s:%s' % (self.doc_id),
             limit=limit,
             offset=offset,
-            boost='contribs_f'
+            boost='contribs_f',
+            fields=','.join(self.fields)
         )
 
     def get_topics(self, limit=10, offset=0):
@@ -409,7 +431,8 @@ class PageModel:
         :rtype: dict
         """
         for row in solr.get_all_docs_by_query(solr.all_pages_collection(),
-                                              'id:%s' % self.doc_id):
+                                              'id:%s' % self.doc_id,
+                                              fields=','.join(self.fields)):
             return row
 
 
@@ -417,6 +440,8 @@ class UserModel:
     """
     Data model for user
     """
+    
+    fields = ['id', 'name_s']
 
     def __init__(self, user_id):
         """
@@ -434,6 +459,7 @@ class UserModel:
         return solr.get_docs_by_query_with_limit(solr.user_collection(),
                                                  kwargs['q'],
                                                  boost='scaled_authority_f',
+                                                 fields=','.join(self.fields),
                                                  **sans_q(kwargs))
 
 
@@ -454,7 +480,8 @@ class UserModel:
                                                  'user_id_i:%d' % self.user_id,
                                                  limit=limit,
                                                  offset=offset,
-                                                 boost='user_page_authority_f')
+                                                 boost='user_page_authority_f',
+                                                 fields=','.join(self.fields))
 
     def get_wikis(self, limit=10, offset=0):
         """
@@ -473,7 +500,8 @@ class UserModel:
                                                  'user_id_i:%d' % self.user_id,
                                                  limit=limit,
                                                  offset=offset,
-                                                 boost='scaled_contribs_authority_f')
+                                                 boost='scaled_contribs_authority_f',
+                                                 fields=','.join(self.fields))
 
     def get_topics(self, limit=10, offset=0):
         """
@@ -503,7 +531,9 @@ class UserModel:
         :return: ordered dict of topic name to auth or a list of dicts for api
         :rtype: collections.OrderedDict|list
         """
-        for doc in solr.get_all_docs_by_query(solr.wiki_user_collection(), 'user_id_i:%d' % self.user_id):
+        for doc in solr.get_all_docs_by_query(solr.wiki_user_collection(), 
+                                              'user_id_i:%d' % self.user_id,
+                                              fields=','.join(self.fields)):
             return doc['attr_entities']
 
     def get_row(self):
@@ -513,7 +543,9 @@ class UserModel:
         :return: row data
         :rtype: dict
         """
-        for doc in solr.get_all_docs_by_query(solr.user_collection(), "user_id_i:%d" % self.user_id):
+        for doc in solr.get_all_docs_by_query(solr.user_collection(), 
+                                              "user_id_i:%d" % self.user_id,
+                                              fields=','.join(self.fields)):
             return doc
 
 
