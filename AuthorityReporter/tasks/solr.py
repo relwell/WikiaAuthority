@@ -514,26 +514,32 @@ def analyze_topics_globally():
 @shared_task()
 def analyze_all_user_pages_globally():
     collection = solr.all_user_pages_collection()
-    authorities = []
-    contribs = []
+    new_docs = {}
     for doc in solr.get_all_docs_by_query(collection, '*:*', fields="id,doc_authority_f"):
-        authorities.append(doc['doc_authority_f'])
-        contribs.append(doc['contribs_f'])
+        user_id = doc['id'].split('_').pop()
+        if user_id in new_docs:
+            new_docs[user_id]['total_authority_f']['set'] += doc['doc_authority_f']
+            new_docs[user_id]['total_contribs_f']['set'] += doc['contribs_f']
+        else:
+            new_docs[user_id] = {
+                'id': user_id,
+                'total_authority_f': {'set': doc['doc_authority_f']},
+                'total_contribs_f': {'set': doc['contribs_f']}
+            }
 
-    authority_scaler = MinMaxScaler(authorities)
-    contribs_scaler = MinMaxScaler(contribs)
-    new_docs = []
-    for doc in solr.get_all_docs_by_query(collection, '*:*', fields="id,doc_authority_f"):
-        scaled_authority = authority_scaler.scale(doc['doc_authority_f'])
-        scaled_contribs = contribs_scaler.scale(doc['contribs_f'])
-        new_docs.append({
-            'id': doc['id'],
-            'scaled_authority_f': {'set': scaled_authority},
-            'scaled_contribs_f': {'set': scaled_contribs},
-            'scaled_contrib_authority_f': {'set': scaled_authority * scaled_contribs}
-        })
+    authorities, contribs = [], []
+    for doc in new_docs.values():
+        authorities.append(doc['total_authority_f'])
+        contribs.append(doc['total_contribs_f'])
 
-    collection.add(new_docs)
+    authorityscaler = MinMaxScaler(authorities)
+    contribscaler = MinMaxScaler(contribs)
+    for doc in new_docs.values():
+        doc['scaled_authority_f'] = authorityscaler.scale(doc['total_authority_f'])
+        doc['contribs_scaled_f'] = contribscaler.scale(doc['total_contribs_f'])
+        doc['scaled_authority_contribs_f'] = doc['scaled_authority_f'] * doc['contribs_scaled_f']
+
+    collection.add(new_docs.values())
     collection.commit()
 
 

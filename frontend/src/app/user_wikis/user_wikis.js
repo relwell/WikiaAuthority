@@ -1,6 +1,7 @@
 angular.module( 'wikiaAuthority.user_wikis', [
   'ui.router',
-  'wikiaAuthority.user'
+  'wikiaAuthority.user',
+  'wikiaAuthority.hubs'
 ])
 .config(function config( $stateProvider ) {
   $stateProvider.state( 'user_wikis', {
@@ -15,11 +16,11 @@ angular.module( 'wikiaAuthority.user_wikis', [
   });
 })
 .service( 'UserWikisService',
-  ['$http',
-    function UserWikisService($http) {
+  ['$http', 'HubsService',
+    function UserWikisService($http, HubsService) {
 
       var with_wikis_for_user = function with_wikis_for_user(user, callable) {
-        $http.get('/api/user/'+user+'/wikis/').success(callable);
+        $http.get('/api/user/'+user+'/wikis/', {params: HubsService.params()}).success(callable);
       };
 
       return {

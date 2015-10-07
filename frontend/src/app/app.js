@@ -2,6 +2,7 @@ angular.module( 'wikiaAuthority', [
   'templates-app',
   'templates-common',
   'wikiaAuthority.home',
+  'wikiaAuthority.hubs',
   'wikiaAuthority.topic',
   'wikiaAuthority.topic_pages',
   'wikiaAuthority.topic_users',
