@@ -17,6 +17,22 @@ def get_page_response(tup):
     return current_url, dict(response.json().get(u'items', {}))
 
 
+def fq_from_kwargs(dict):
+    if 'fq' in dict:
+        hubs = HubModel.get_hubs()
+
+
+
+
+class HubModel:
+
+    @staticmethod
+    def get_hubs():
+        return [dict(hub=hub, count=count) for hub, count
+                in solr.iterate_per_facetfield_value(solr.global_collection(),
+                                                     solrcloudpy.SearchOptions({'q': '*:*'}), 'hub_s asc')]
+
+
 class TopicModel:
     
     fields = ['id', 'topic_s']
@@ -55,7 +71,7 @@ class TopicModel:
                                                  boost='scaled_authority_f',
                                                  fields=','.join(PageModel.fields))
 
-    def get_wikis(self, limit=10, offset=0):
+    def get_wikis(self, limit=10, offset=0, **kwargs):
         """
         Gets wikis for the current topic
 
@@ -74,7 +90,8 @@ class TopicModel:
                                                  limit=limit,
                                                  offset=offset,
                                                  boost='scaled_authority_f',
-                                                 fields=','.join(WikiModel.fields))
+                                                 fields=','.join(WikiModel.fields),
+                                                 fq=fq_from_kwargs(kwargs))
 
     def get_users(self, limit=10, offset=0, **kwargs):
         """

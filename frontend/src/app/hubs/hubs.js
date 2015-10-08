@@ -2,30 +2,40 @@ angular.module( 'wikiaAuthority.hubs')
   .service( 'HubsService',
     ['$http',
       function HubsService($http){
-        var hub_data = {};
+        var selected_hub = null;
         var get_hubs = function(callback) {
           $http.get('/api/hubs').success(callback)
         };
         var params = function(other_params) {
-          // todo: implement, durr
+          other_params = other_params || {};
+          if (selected_hub && selected_hub !== 0 && selected_hub !== '0') {
+            other_params['fq'] = "hub_s:"+selected_hub;
+          }
           return other_params;
         };
         return {
           get_hubs: get_hubs,
-          hub_data: hub_data,
+          selected_hub: selected_hub,
           hub_params: params
         };
 }])
 .controller( 'HubsCtrl',
-['$scope', 'HubsService',
-  function HubsController( $scope, HubsService ) {
+['$scope', '$location', 'HubsService',
+  function HubsController( $scope, $location, HubsService ) {
+    $scope.selected_hub = HubsService.selected_hub;
     HubsService.get_hubs(function(data) {
       $scope.hubs = [];
       data.forEach(function(datum) {
-        HubsService.hub_data[datum.hub] = true;
         $scope.hubs.push(datum.hub);
       });
-      $scope.hub_data = HubService.hub_data;
+    });
+    $scope.watch('selected_hub', function() {
+      HubsService.selected_hub = $scope.selected_hub;
+      $location.search('hub', $scope.selected_hub)
+    });
+
+    $scope.$on('$locationChangeSuccess', function() {
+      $scope.selected_hub = $location.search('hub');
     });
   }
 ]);

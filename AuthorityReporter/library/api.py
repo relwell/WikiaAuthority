@@ -29,6 +29,7 @@ def get_request_parser():
     parser.add_argument(u'limit', type=int, help=u'Limit', default=10)
     parser.add_argument(u'offset', type=int, help=u'Offset', default=0)
     parser.add_argument(u'q', type=str, help=u'The Query', default=None)
+    parser.add_argument(u'fq', type=str, help=u'Filter Query for Hubs', default=None)
     return parser
 
 
@@ -107,9 +108,7 @@ class Hubs(restful.Resource):
     urls = [u"/api/hubs"]
 
     def get(self):
-        return [dict(hub=hub, count=count) for hub, count
-                in solr.iterate_per_facetfield_value(solr.global_collection(),
-                                                     solrcloudpy.SearchOptions({'q': '*:*'}), 'hub_s')]
+        return models.HubModel.get_hubs()
 
 
 class Wiki(restful.Resource):

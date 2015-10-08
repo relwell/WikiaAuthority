@@ -1,10 +1,13 @@
 <div id="hubs" class="container">
     <div class="row">
-        <div class="col-md-1" ng-repeat="hub in hubs">
+        <div class="col-md-12">
             <label>
-                <input type="checkbox" value="{{hub}}" checked="checked" ng-model="hub_data[hub]">
-                {{hub}}
+                Select a Vertical:
             </label>
+            <select ng-model="selected_hub">
+                <option value="0" selected="selected">All Hubs</option>
+                <option value="{{hub}}" ng-repeat="hub in hubs">{{hub}}</option>
+            </select>
         </div>
     </div>
 </div>

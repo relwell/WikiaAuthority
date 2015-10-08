@@ -5,7 +5,7 @@ angular.module( 'wikiaAuthority.user_wikis', [
 ])
 .config(function config( $stateProvider ) {
   $stateProvider.state( 'user_wikis', {
-    url: '/user/:user/wikis',
+    url: '/user/:user/wikis?:hub',
     views: {
       "main": {
         controller: 'UserWikisCtrl',
