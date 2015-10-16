@@ -37,7 +37,10 @@ angular.module( 'wikiaAuthority.user_pages', [
         $scope.user = data;
       });
       UserPagesService.with_pages_for_user($scope.user_id, function(data) {
-        $scope.pages = data.pages;
+        $scope.pages = data.pages.map(function(page) {
+          page.id = page.id.split('_').slice(0, -1).join('_');
+          return page;
+        });
       });
     }
   ]

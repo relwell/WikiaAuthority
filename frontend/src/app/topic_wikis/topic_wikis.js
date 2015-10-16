@@ -34,7 +34,7 @@ angular.module( 'wikiaAuthority.topic_wikis', [
     function WikiWikisController( $scope, $stateParams, TopicService, WikiService, TopicWikisService ) {
       $scope.topic = $stateParams.topic;
 
-      WikiWikisService.with_wikis_for_topic($scope.topic, function(data) {
+      TopicWikisService.with_wikis_for_topic($scope.topic, function(data) {
         $scope.wikis = data.wikis;
 
         $scope.wiki_to_details = {};

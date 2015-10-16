@@ -86,7 +86,7 @@ class TopicModel:
 
         collection = solr.global_collection()
         return solr.get_docs_by_query_with_limit(collection,
-                                                 self.topic,
+                                                 'attr_entities:"%s"' % self.topic,
                                                  limit=limit,
                                                  offset=offset,
                                                  boost='scaled_authority_f',
@@ -404,7 +404,7 @@ class PageModel:
                                           params=dict(ids=self.page_id)).json()[u'items'][self.page_id]
         return self._api_data
 
-    def get_users(self, limit=10, offset=0):
+    def get_users(self, limit=10, offset=0, **kwargs):
         """
         Get the most authoritative users for this page
 
@@ -426,7 +426,7 @@ class PageModel:
             fields=','.join(UserModel.fields)
         )
 
-    def get_topics(self, limit=10, offset=0):
+    def get_topics(self, limit=10, offset=0, **kwargs):
         """
         Get the topics for the current page
 
@@ -479,7 +479,7 @@ class UserModel:
                                                  fields=','.join(UserModel.fields),
                                                  **sans_q(kwargs))
 
-    def get_pages(self, limit=10, offset=0):
+    def get_pages(self, limit=10, offset=0, **kwargs):
         """
         Gets top pages for this user
         calculated by contribs times global authority
@@ -499,7 +499,7 @@ class UserModel:
                                                  boost='user_page_authority_f',
                                                  fields=','.join(PageModel.fields))
 
-    def get_wikis(self, limit=10, offset=0):
+    def get_wikis(self, limit=10, offset=0, **kwargs):
         """
         Most important wikis for this user
         Calculated by sum of contribs times global authority
@@ -519,7 +519,7 @@ class UserModel:
                                                  boost='scaled_contribs_authority_f',
                                                  fields=','.join(WikiModel.fields))
 
-    def get_topics(self, limit=10, offset=0):
+    def get_topics(self, limit=10, offset=0, **kwargs):
         """
         Gets most important topics for this user
 
@@ -531,9 +531,9 @@ class UserModel:
         :return: ordered dict of topic name to auth or a list of dicts
         :rtype: collections.OrderedDict|list
         """
-        self.get_row()['attr_entities']
+        return self.get_row()['attr_entities']
 
-    def get_topics_for_wiki(self, wiki_id, limit=10, offset=0):
+    def get_topics_for_wiki(self, wiki_id, limit=10, offset=0, **kwargs):
         """
         Gets most important topics for this user on this wiki
 
@@ -547,9 +547,9 @@ class UserModel:
         :return: ordered dict of topic name to auth or a list of dicts for api
         :rtype: collections.OrderedDict|list
         """
-        for doc in solr.get_all_docs_by_query(solr.wiki_user_collection(), 
-                                              'user_id_i:%d' % self.user_id,
-                                              fields=','.join(TopicModel.fields)):
+        for doc in solr.get_all_docs_by_query(solr.wiki_user_collection(),
+                                              'user_id_i:%d_%d' % (wiki_id, self.user_id),
+                                              fields=','.join(TopicModel.fields+['attr_entities'])):
             return doc['attr_entities']
 
     def get_row(self):
@@ -560,8 +560,8 @@ class UserModel:
         :rtype: dict
         """
         for doc in solr.get_all_docs_by_query(solr.user_collection(), 
-                                              "user_id_i:%d" % self.user_id,
-                                              fields=','.join(self.fields)):
+                                              "*:*",
+                                              fields=','.join(self.fields+['attr_entities'])):
             return doc
 
 

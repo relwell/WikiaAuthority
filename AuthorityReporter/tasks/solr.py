@@ -392,7 +392,8 @@ def analyze_users_globally():
 
     id_to_docs = dict()
     for user_doc in solr.get_all_docs_by_query(wiki_user_collection, '*:*'):
-        doc_id = user_doc['id']
+        # these are gonna be wiki-id_user-id
+        doc_id = user_doc['id'].split('_').pop()
         if doc_id not in id_to_docs:
             id_to_docs[doc_id] = dict(id=doc_id,
                                       attr_entities={'set': []},

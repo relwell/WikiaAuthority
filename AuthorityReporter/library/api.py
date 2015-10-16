@@ -323,7 +323,7 @@ class UserTopics(restful.Resource):
             u'user': user_id,
             u'limit': request_args[u'limit'],
             u'offset': request_args[u'offset'],
-            u'topics': models.UserModel(user_id).get_topics(**request_args).values()
+            u'topics': models.UserModel(user_id).get_topics(**request_args)
         }
 
 
