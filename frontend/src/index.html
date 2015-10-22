@@ -20,6 +20,20 @@
         <span ng-show="home">Authority App</span>
     </h1>
     <div class="container" ui-view="main"></div>
-    <div class="container" ng-controller="hubs"></div>
+    <div class="container" ng-controller="HubsCtrl">
+      <div id="hubs" class="container">
+        <div class="row">
+          <div class="col-md-offset-3 col-md-6 text-center">
+            <label>
+              Select a Vertical:
+            </label>
+            <select class="form-control" ng-model="selected_hub">
+              <option value="" ng-selected="hub == '' || !hub || hub === undefined">All Hubs</option>
+              <option value="{{hub}}" ng-repeat="hub in hubs" ng-selected="hub == selected_hub">{{hub}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

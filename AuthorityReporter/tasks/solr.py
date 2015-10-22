@@ -88,7 +88,8 @@ def add_with_metadata(wiki_data, docs):
                 'contribs_f': {'set': contrib['contribs']},
                 'attr_entities': {'set': doc['attr_entities']['set']},
                 'doc_authority_f': {'set': doc['authority_f']['set']},
-                'user_page_authority_f': {'set': contrib['contribs'] * doc['authority_f']['set']}
+                'user_page_authority_f': {'set': contrib['contribs'] * doc['authority_f']['set']},
+                'hub_s': {'set': wiki_data['hub_s']}
             })
 
             doc['attr_users'] = {'set': users_txt}
@@ -126,6 +127,7 @@ def build_wiki_user_doc(wiki_data, user_tuple):
         'name_s': {'set': user_name},
         'type_s': {'set': 'WikiUser'},
         'name_txt_en': {'set': user_name},
+        'hub_s': {'set': wiki_data['hub_s']}
     }
     doc_ids = []
     entities = []
@@ -204,6 +206,8 @@ def ingest_data(wiki_id):
     :type wiki_id: int
     :return:
     """
+    
+    from AuthorityReporter.library.solr import debug_requests
 
     # make sure all pages and all user pages exists
     solr.existing_collection(solr.all_pages_collection())

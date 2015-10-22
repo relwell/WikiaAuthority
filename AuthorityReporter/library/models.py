@@ -2,6 +2,7 @@ import requests
 import xlwt
 from nlp_services.caching import use_caching
 from AuthorityReporter.library import solr
+from solrcloudpy import SearchOptions
 from celery import shared_task
 
 
@@ -30,7 +31,7 @@ class HubModel:
     def get_hubs():
         return [dict(hub=hub, count=count) for hub, count
                 in solr.iterate_per_facetfield_value(solr.global_collection(),
-                                                     solrcloudpy.SearchOptions({'q': '*:*'}), 'hub_s asc')]
+                                                     SearchOptions(**{'q': '*:*', 'rows': 0}), 'hub_s')]
 
 
 class TopicModel:
@@ -120,6 +121,7 @@ class TopicModel:
                                                  kwargs['q'],
                                                  boost='total_authority_f',
                                                  fields=','.join(TopicModel.fields),
+                                                 qf='topic_txt_en',
                                                  **sans_q(kwargs))
 
 
@@ -497,7 +499,8 @@ class UserModel:
                                                  limit=limit,
                                                  offset=offset,
                                                  boost='user_page_authority_f',
-                                                 fields=','.join(PageModel.fields))
+                                                 fields=','.join(PageModel.fields),
+                                                 **sans_q(kwargs))
 
     def get_wikis(self, limit=10, offset=0, **kwargs):
         """
@@ -517,7 +520,8 @@ class UserModel:
                                                  limit=limit,
                                                  offset=offset,
                                                  boost='scaled_contribs_authority_f',
-                                                 fields=','.join(WikiModel.fields))
+                                                 fields='wiki_id_i',
+                                                 **sans_q(kwargs))
 
     def get_topics(self, limit=10, offset=0, **kwargs):
         """

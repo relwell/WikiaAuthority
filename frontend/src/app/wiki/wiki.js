@@ -3,8 +3,8 @@ angular.module( 'wikiaAuthority.wiki', [
   'wikiaAuthority.hubs'
 ])
 .config(function config( $stateProvider ) {
-  $stateProvider.state( 'wikis?:hub', {
-    url: '/wikis?:q',
+  $stateProvider.state( 'wikis', {
+    url: '/wikis?:q&:hub',
     views: {
       "main": {
         controller: 'WikisCtrl',

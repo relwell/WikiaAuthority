@@ -132,7 +132,7 @@ def get_docs_by_query(collection, query, page=1, sort="id asc", docsize=DEFAULT_
                                         boost=boost)
 
 
-def get_docs_by_query_with_limit(collection, query, limit=None, offset=None, sort=None, fields=None, boost=None, fq=None):
+def get_docs_by_query_with_limit(collection, query, limit=None, offset=None, sort=None, fields=None, boost=None, fq=None, qf=None):
     """
     Helper function for accessing docs by query
 
@@ -151,8 +151,7 @@ def get_docs_by_query_with_limit(collection, query, limit=None, offset=None, sor
     :return: the response dict
     :rtype: dict
     """
-
-    return get_result_by_query(collection, query, limit, offset, sort, fields=fields, boost=boost, fq=fq)['docs']
+    return get_result_by_query(collection, query, limit, offset, sort, fields=fields, boost=boost, fq=fq, qf=qf)['docs']
 
 
 def get_paginated_result_by_query(collection, query, page=1, sort=None, docsize=DEFAULT_DOCSIZE, boost=None, **kwargs):
@@ -173,7 +172,7 @@ def get_paginated_result_by_query(collection, query, page=1, sort=None, docsize=
     return get_result_by_query(collection, query, limit=docsize, sort=sort, offset=(page-1) * docsize, boost=boost)
 
 
-def get_result_by_query(collection, query, limit=None, offset=None, sort=None, fields=None, boost=None, fq=None):
+def get_result_by_query(collection, query, limit=None, offset=None, sort=None, fields=None, boost=None, fq=None, qf=None):
     """
     Helper function for accessing result by query -- lets us access numfound as well
 
@@ -196,6 +195,9 @@ def get_result_by_query(collection, query, limit=None, offset=None, sort=None, f
     se.commonparams.q(query)
     if fq:
         se.commonparams._q['fq'].add(fq)
+    if qf:
+        print qf
+        se.commonparams._q['qf'].add(qf)
     if sort:
         se.commonparams.sort(sort)
     if fields:

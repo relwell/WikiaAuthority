@@ -33,7 +33,7 @@ angular.module( 'wikiaAuthority.topic', [
 .controller( 'TopicsCtrl',
     ['$scope', '$stateParams', 'TopicService',
     function TopicsController($scope, $stateParams, TopicService) {
-      TopicService.with_search_result_for_topic({q: $stateParams.q},
+      TopicService.with_search_results_for_topic({q: $stateParams.q},
       function(topics) {
         $scope.topics = topics;
       });

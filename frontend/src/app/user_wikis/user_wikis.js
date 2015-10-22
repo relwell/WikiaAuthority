@@ -36,13 +36,6 @@ angular.module( 'wikiaAuthority.user_wikis', [
 
       UserWikisService.with_wikis_for_user($scope.user, function(data) {
         $scope.wikis = data.wikis;
-
-        $scope.wiki_to_details = {};
-        $scope.wikis.forEach(function(wiki){
-          WikisService.with_details_for_wiki(wiki.wiki_id_i, function(data) {
-            $scope.wiki_to_details[wiki.wiki_id_i] = data;
-          });
-        });
       });
     }
   ]
