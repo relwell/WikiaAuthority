@@ -172,16 +172,6 @@ def edit_distance(wiki_id, api_url, title_object, earlier_revision, later_revisi
     :return: the edit distance between the two reivsions expressed as a float
     :rtype: float
     """
-    r = redis.StrictRedis(host=app.config['REDIS_HOST'], port=app.config['REDIS_PORT'], db=app.config['REDIS_DB'])
-    key = "%s_%s_%s_%s" % (wiki_id, title_object[u'pageid'], str(earlier_revision), str(later_revision))
-    try:
-        result = r.get(key)
-        if result is not None:
-            return float(result)
-    except redis.ConnectionError:
-        # we will just calculate it
-        pass
-
     params = {u'action': u'query',
               u'prop': u'revisions',
               u'rvprop': u'ids|user|userid',
@@ -328,18 +318,6 @@ def get_all_revisions(api_url, title_object):
     return [title_string, revisions]
 
 
-@shared_task
-def prime_edit_distance(wiki_id, api_url, title_obj, title_revs):
-
-    revids_dict = {}
-    for i in range(1, len(title_revs)):
-        for j in range(i, len(title_revs)):
-            revids_dict[(title_revs[i-1][u'revid'], title_revs[i][u'revid'])] = 1
-
-
-    return [edit_distance(wiki_id, api_url, title_obj, rev_1, rev_2) for rev_1, rev_2 in revids_dict.keys()]
-
-
 def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
     """
     Creates a dictionary of titles and its top authors
@@ -355,25 +333,6 @@ def get_title_top_authors(wiki_id, api_url, all_titles, all_revisions):
     :return: a dict keying title to top authors
     :rtype: dict
     """
-
-    print "Initializing edit distance data"
-
-    all_title_len = len(all_titles)
-    group_map = []
-    for i in range(0, all_title_len, 25):
-        print "%d/%d" % (i, all_title_len)
-        group_map.append(group(prime_edit_distance.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
-                               for title_obj in all_titles[i:i+100] if title_obj[u'title'] in all_revisions)())
-
-    print "Waiting on initialization to complete"
-    readies = len(filter(lambda x: x.ready(), group_map))
-    group_size = len(group_map)
-    while False in map(lambda x: x.ready(), group_map):
-        new_readies = len(filter(lambda x: x.ready(), group_map))
-        if new_readies > readies:
-            print "%d/%d" % (new_readies, group_size)
-        readies = new_readies
-        time.sleep(1)
 
     print "Getting contributing authors for titles"
     futures = group(get_contributing_authors.s(wiki_id, api_url, title_obj, all_revisions[title_obj[u'title']])
