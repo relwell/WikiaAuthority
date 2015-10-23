@@ -89,7 +89,7 @@ def add_with_metadata(wiki_data, docs):
                 'attr_entities': {'set': doc['attr_entities']['set']},
                 'doc_authority_f': {'set': doc['authority_f']['set']},
                 'user_page_authority_f': {'set': contrib['contribs'] * doc['authority_f']['set']},
-                'hub_s': {'set': wiki_data['hub_s']}
+                'hub_s': doc['hub_s']
             })
 
             doc['attr_users'] = {'set': users_txt}
@@ -127,7 +127,7 @@ def build_wiki_user_doc(wiki_data, user_tuple):
         'name_s': {'set': user_name},
         'type_s': {'set': 'WikiUser'},
         'name_txt_en': {'set': user_name},
-        'hub_s': {'set': wiki_data['hub_s']}
+        'hub_s': wiki_data['hub_s']
     }
     doc_ids = []
     entities = []
@@ -206,9 +206,6 @@ def ingest_data(wiki_id):
     :type wiki_id: int
     :return:
     """
-    
-    from AuthorityReporter.library.solr import debug_requests
-
     # make sure all pages and all user pages exists
     solr.existing_collection(solr.all_pages_collection())
     solr.existing_collection(solr.all_user_pages_collection())
@@ -236,6 +233,9 @@ def ingest_data(wiki_id):
                                          u'controller': u'WikiaSearchIndexerController'}).json()[u'contents']
 
     wiki_data[u'hub_s'] = wiki_api_data[u'hub_s']
+    
+    # easier
+    api_data[u'hub_s'] = wiki_api_data[u'hub_s']
 
     collection = solr.existing_collection(solr.collection_for_wiki(wiki_id))
 
@@ -257,7 +257,8 @@ def ingest_data(wiki_id):
             'attr_entities': {'set': list(set(entity_data.get(u'redirects', {}).values()
                                               + entity_data.get(u'titles')))},
             'type_s': {'set': 'Page'},
-            'authority_f': {'set': pages_to_authority.get(doc_id, 0)}
+            'authority_f': {'set': pages_to_authority.get(doc_id, 0)},
+            'hub_s': wiki_api_data['hub_s']
         })
 
         if counter != 0 and counter % 1500 == 0:

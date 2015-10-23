@@ -38,19 +38,12 @@ angular.module( 'wikiaAuthority.topic_users', [
  * And of course we define a controller for our route.
  */
 .controller( 'TopicUsersCtrl',
-  ['$scope', '$stateParams', 'TopicService', 'UserService', 'TopicUsersService',
-    function TopicUsersController( $scope, $stateParams, TopicService, UserService, TopicUsersService ) {
+  ['$scope', '$stateParams', 'TopicService', 'TopicUsersService',
+    function TopicUsersController( $scope, $stateParams, TopicService, TopicUsersService ) {
       $scope.topic = $stateParams.topic;
 
       TopicUsersService.with_users_for_topic($scope.topic, function(data) {
         $scope.users = data.users;
-
-        $scope.user_to_details = {};
-        $scope.users.forEach(function(user){
-          UsersService.with_details_for_user(user.user_id_i, function(data) {
-            $scope.user_to_details[user.user_id_i] = data;
-          });
-        });
       });
     }
   ]

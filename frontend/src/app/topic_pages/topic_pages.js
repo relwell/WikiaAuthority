@@ -1,6 +1,7 @@
 angular.module( 'wikiaAuthority.topic_pages', [
   'ui.router',
-  'wikiaAuthority.topic'
+  'wikiaAuthority.topic',
+  'wikiaAuthority.hubs'
 ])
 
 /**
@@ -10,7 +11,7 @@ angular.module( 'wikiaAuthority.topic_pages', [
  */
 .config(function config( $stateProvider ) {
   $stateProvider.state( 'topic_pages', {
-    url: '/topic/:topic/pages',
+    url: '/topic/:topic/pages?:hub',
     views: {
       "main": {
         controller: 'TopicPagesCtrl',
@@ -21,11 +22,11 @@ angular.module( 'wikiaAuthority.topic_pages', [
   });
 })
 .service( 'TopicPagesService',
-  ['$http',
-    function TopicPagesService($http) {
+  ['$http', 'HubsService',
+    function TopicPagesService($http, HubsService) {
 
       var with_pages_for_topic = function with_pages_for_topic(topic, callable) {
-        $http.get('/api/topic/'+topic+'/pages/').success(callable);
+        $http.get('/api/topic/'+topic+'/pages/', {params: HubsService.params()}).success(callable);
       };
 
       return {
@@ -44,13 +45,6 @@ angular.module( 'wikiaAuthority.topic_pages', [
 
       TopicPagesService.with_pages_for_topic($scope.topic, function(data) {
         $scope.pages = data.pages;
-
-        $scope.page_to_details = {};
-        $scope.pages.forEach(function(page){
-          PagesService.with_details_for_page(page.page_id_i, function(data) {
-            $scope.page_to_details[page.page_id_i] = data;
-          });
-        });
       });
     }
   ]

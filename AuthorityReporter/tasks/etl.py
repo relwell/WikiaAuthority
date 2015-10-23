@@ -212,7 +212,6 @@ def edit_distance(wiki_id, api_url, title_object, earlier_revision, later_revisi
             if changes > 0:
                 moves /= changes
             distance = max([adds, deletes]) - 0.5 * min([adds, deletes]) + moves
-            r.set(key, distance)
 
         except (TypeError, ParserError, UnicodeEncodeError):
             pass

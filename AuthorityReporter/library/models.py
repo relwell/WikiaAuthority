@@ -18,13 +18,6 @@ def get_page_response(tup):
     return current_url, dict(response.json().get(u'items', {}))
 
 
-def fq_from_kwargs(dict):
-    if 'fq' in dict:
-        hubs = HubModel.get_hubs()
-
-
-
-
 class HubModel:
 
     @staticmethod
@@ -63,14 +56,14 @@ class TopicModel:
         :return: a list of objects reflecting page results
         :rtype: list
         """
-
         collection = solr.all_pages_collection()
         return solr.get_docs_by_query_with_limit(collection,
                                                  self.topic,
                                                  limit=limit,
                                                  offset=offset,
                                                  boost='scaled_authority_f',
-                                                 fields=','.join(PageModel.fields))
+                                                 fields=','.join(PageModel.fields),
+                                                 **sans_q(kwargs))
 
     def get_wikis(self, limit=10, offset=0, **kwargs):
         """
@@ -92,7 +85,7 @@ class TopicModel:
                                                  offset=offset,
                                                  boost='scaled_authority_f',
                                                  fields=','.join(WikiModel.fields),
-                                                 fq=fq_from_kwargs(kwargs))
+                                                 **sans_q(kwargs))
 
     def get_users(self, limit=10, offset=0, **kwargs):
         """
@@ -113,7 +106,8 @@ class TopicModel:
                                                  limit=limit,
                                                  offset=offset,
                                                  boost='scaled_authority_f',
-                                                 fields=','.join(UserModel.fields))
+                                                 fields=','.join(UserModel.fields),
+                                                 **sans_q(kwargs))
 
     @staticmethod
     def search(**kwargs):
@@ -425,7 +419,8 @@ class PageModel:
             limit=limit,
             offset=offset,
             boost='contribs_f',
-            fields=','.join(UserModel.fields)
+            fields=','.join(UserModel.fields),
+            **sans_q(kwargs)
         )
 
     def get_topics(self, limit=10, offset=0, **kwargs):
