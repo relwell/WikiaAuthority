@@ -416,6 +416,10 @@ def etl(wiki_id):
 
     print time.time() - start
 
+    if title_top_authors is None:
+        print "No title top authors!"
+        return
+
     print "Calculating Centrality"
     centralities = author_centrality(title_top_authors)
 
