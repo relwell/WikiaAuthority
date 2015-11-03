@@ -35,13 +35,13 @@ angular.module( 'wikiaAuthority.topic', [
 .controller( 'TopicsCtrl',
     ['$scope', '$stateParams', 'TopicService', 'HubsService',
     function TopicsController($scope, $stateParams, TopicService, HubsService) {
-      var page = 1;
+      $scope.page = 1;
       $scope.topics = [];
       $scope.paginate = function() {
         TopicService.with_search_results_for_topic(HubsService.params({q: $stateParams.q, page: page}),
         function(topics) {
           topics.map(function(x){ $scope.topics.push(x); });
-          page += 1;
+          $scope.page += 1;
         });
       };
       $scope.paginate();

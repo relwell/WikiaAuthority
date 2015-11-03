@@ -38,10 +38,10 @@ angular.module( 'wikiaAuthority.wiki_pages', [
         $scope.wiki = data;
       });
       $scope.pages = [];
-      var page = 1;
+      $scope.page = 1;
       WikiPagesService.with_pages_for_wiki($scope.wiki_id, HubsService.params({page: page}), function(data) {
         data.pages.map(function(x){ $scope.pages.push(x); });
-        page += 1;
+        $scope.page += 1;
       });
       $scope.paginate();
     }

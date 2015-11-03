@@ -34,12 +34,12 @@ angular.module( 'wikiaAuthority.user_wikis', [
   ['$scope', '$stateParams', 'UserService', 'WikiService', 'UserWikisService', 'HubsService',
     function UserWikisController( $scope, $stateParams, UserService, WikiService, UserWikisService, HubsService ) {
       $scope.user = $stateParams.user;
-      var page = 1;
+      $scope.page = 1;
       $scope.wikis = [];
       $scope.paginate = function() {
         UserWikisService.with_wikis_for_user($scope.user, HubsService.params({page: page}), function(data) {
           data.wikis.map(function(x){ $scope.wikis.push(x); });
-          page += 1;
+          $scope.page += 1;
         });
       };
       $scope.paginate();

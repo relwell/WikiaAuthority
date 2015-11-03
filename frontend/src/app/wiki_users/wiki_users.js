@@ -37,12 +37,12 @@ angular.module( 'wikiaAuthority.wiki_users', [
       WikiService.with_details_for_wiki($scope.wiki_id, function(data) {
         $scope.wiki = data;
       });
-      var page = 1;
+      $scope.page = 1;
       $scope.users = [];
       $scope.paginate = function() {
         WikiUsersService.with_users_for_wiki($scope.wiki_id, HubsService.params({page: page}), function(data) {
           data.users.map(function(x){ $scope.users.push(x); });
-          page += 1;
+          $scope.page += 1;
         });
       };
       $scope.paginate();

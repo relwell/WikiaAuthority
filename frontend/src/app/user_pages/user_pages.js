@@ -35,7 +35,7 @@ angular.module( 'wikiaAuthority.user_pages', [
   ['$scope', '$stateParams', 'UserService', 'TopicService', 'UserPagesService', 'HubsService',
     function UserPagesController( $scope, $stateParams, UserService, TopicService, UserPagesService, HubsService) {
       $scope.user_id = $stateParams.user_id;
-      var page = 1;
+      $scope.page = 1;
       $scope.pages = [];
       $scope.paginate = function() {
         UserPagesService.with_pages_for_user($scope.user_id, function(data) {
@@ -43,7 +43,7 @@ angular.module( 'wikiaAuthority.user_pages', [
             page.id = page.id.split('_').slice(0, -1).join('_');
             return $scope.pages.push(page);
           });
-          page += 1;
+          $scope.page += 1;
         });
       };
       UserService.with_details_for_user($scope.user_id, HubsService.params({page: page}), function(data) {

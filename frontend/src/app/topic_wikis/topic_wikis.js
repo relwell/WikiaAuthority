@@ -34,14 +34,14 @@ angular.module( 'wikiaAuthority.topic_wikis', [
   ['$scope', '$stateParams', 'TopicService', 'TopicWikisService', 'HubsService',
     function TopicWikisController( $scope, $stateParams, TopicService, TopicWikisService, HubsService ) {
       $scope.topic = $stateParams.topic;
-      var page = 1;
+      $scope.page = 1;
       $scope.wikis = [];
       $scope.paginate = function() {
         TopicWikisService.with_wikis_for_topic($scope.topic, 
         HubsService.params({page: page}),
         function(data) {
           data.wikis.map(function(x){ $scope.wikis.push(x); });
-          page += 1;
+          $scope.page += 1;
         });
       };
       $scope.paginate();

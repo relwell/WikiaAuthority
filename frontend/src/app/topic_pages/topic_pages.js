@@ -44,12 +44,12 @@ angular.module( 'wikiaAuthority.topic_pages', [
     function TopicPagesController( $scope, $stateParams, TopicService, UserService, TopicPagesService, HubsService) {
       $scope.topic = $stateParams.topic;
       $scope.pages = [];
-      var page = 1;
+      $scope.page = 1;
       $scope.paginate = function() {
         TopicPagesService.with_pages_for_topic($scope.topic, {params: HubsService.params({page: page})}, 
         function(data) {
           data.pages.map(function(x){ $scope.pages.push(x); });
-          page += 1;
+          $scope.page += 1;
         });
       };
       $scope.paginate();

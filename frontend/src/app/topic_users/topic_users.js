@@ -43,13 +43,13 @@ angular.module( 'wikiaAuthority.topic_users', [
   ['$scope', '$stateParams', 'TopicService', 'TopicUsersService', 'HubsService',
     function TopicUsersController( $scope, $stateParams, TopicService, TopicUsersService, HubsService ) {
       $scope.topic = $stateParams.topic;
-      var page = 1;
+      $scope.page = 1;
       $scope.users = [];
       $scope.paginate = function() {
         TopicUsersService.with_users_for_topic($scope.topic, HubsService.params({page: page}),
         function(data) {
           data.users.map(function(x){ $scope.users.push(x); });
-          page += 1;
+          $scope.page += 1;
         });
       };
       $scope.paginate();
