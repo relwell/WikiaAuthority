@@ -2,7 +2,7 @@ angular.module( 'wikiaAuthority.user_topics', [
   'ui.router',
   'wikiaAuthority.user',
   'wikiaAuthority.topic',
-  'wikiAuthority.hubs'
+  'wikiaAuthority.hubs'
 ])
 .config(function config( $stateProvider ) {
   $stateProvider.state( 'user_topics', {
