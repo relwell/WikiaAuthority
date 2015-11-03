@@ -42,6 +42,7 @@ angular.module( 'wikiaAuthority.wiki_pages', [
         $scope.pages.concat(data.pages);
         page += 1;
       });
+      $scope.paginate();
     }
   ]
 );

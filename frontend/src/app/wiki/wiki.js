@@ -51,6 +51,7 @@ angular.module( 'wikiaAuthority.wiki', [
       $scope.wikis.concat(response);
       page += 1;
     });
+    $scope.paginate();
 }])
 .directive('wiki', function() {
     return {

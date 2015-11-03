@@ -43,6 +43,7 @@ angular.module( 'wikiaAuthority.wiki_topics', [
           $scope.topics.concat(data.topics);
         });
       };
+      $scope.paginate();
     }
   ]
 );

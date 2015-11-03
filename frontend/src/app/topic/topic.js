@@ -43,6 +43,7 @@ angular.module( 'wikiaAuthority.topic', [
           page += 1;
         });
       };
+      $scope.paginate();
 }])
 .directive('topic', function() {
     return {

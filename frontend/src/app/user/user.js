@@ -51,6 +51,7 @@ angular.module( 'wikiaAuthority.user', [
           page += 1;
         });
       };
+      $scope.paginate();
 }])
 .directive('user', function() {
     return {

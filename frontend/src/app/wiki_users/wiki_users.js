@@ -44,6 +44,7 @@ angular.module( 'wikiaAuthority.wiki_users', [
           page += 1;
         });
       };
+      $scope.paginate();
     }
   ]
 );
