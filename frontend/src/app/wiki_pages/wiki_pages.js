@@ -39,7 +39,7 @@ angular.module( 'wikiaAuthority.wiki_pages', [
       });
       $scope.pages = [];
       $scope.page = 1;
-      WikiPagesService.with_pages_for_wiki($scope.wiki_id, HubsService.params({page: $scope.page}), function(data) {
+      WikiPagesService.with_pages_for_wiki($scope.wiki_id, HubsService.params({offset: $scope.page * 10}), function(data) {
         data.pages.map(function(x){ $scope.pages.push(x); });
         $scope.page += 1; $scope.fetching = false;
       });

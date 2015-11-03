@@ -46,7 +46,7 @@ angular.module( 'wikiaAuthority.topic_pages', [
       $scope.pages = [];
       $scope.page = 1;
       $scope.fetching = false; $scope.paginate = function() { $scope.fetching = true;
-        TopicPagesService.with_pages_for_topic($scope.topic, {params: HubsService.params({page: $scope.page})},
+        TopicPagesService.with_pages_for_topic($scope.topic, {params: HubsService.params({offset: $scope.page * 10})},
         function(data) {
           data.pages.map(function(x){ $scope.pages.push(x); });
           $scope.page += 1; $scope.fetching = false;

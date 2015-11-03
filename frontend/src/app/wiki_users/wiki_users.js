@@ -40,7 +40,7 @@ angular.module( 'wikiaAuthority.wiki_users', [
       $scope.page = 1;
       $scope.users = [];
       $scope.fetching = false; $scope.paginate = function() { $scope.fetching = true;
-        WikiUsersService.with_users_for_wiki($scope.wiki_id, HubsService.params({page: $scope.page}), function(data) {
+        WikiUsersService.with_users_for_wiki($scope.wiki_id, HubsService.params({offset: $scope.page * 10}), function(data) {
           data.users.map(function(x){ $scope.users.push(x); });
           $scope.page += 1; $scope.fetching = false;
         });
