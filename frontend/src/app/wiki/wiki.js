@@ -48,10 +48,12 @@ angular.module( 'wikiaAuthority.wiki', [
   function WikisController($scope, $stateParams, WikiService, HubsService) {
     var page = 1;
     $scope.wikis = [];
-    WikiService.with_search_results_for_wiki(HubsService.params({q: $stateParams.q, page: page}), function(response) {
-      response.map($scope.wikis.push);
-      page += 1;
-    });
+    $scope.paginate = function () {
+      WikiService.with_search_results_for_wiki(HubsService.params({q: $stateParams.q, page: page}), function(response) {
+        response.map($scope.wikis.push);
+        page += 1;
+      });
+    };
     $scope.paginate();
 }])
 .directive('wiki', function() {
