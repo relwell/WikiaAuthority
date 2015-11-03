@@ -1,5 +1,5 @@
 angular.module( 'wikiaAuthority.user', [
-  'ui.router'
+  'ui.router',
   'infinite-scroll',
   'wikiaAuthority.hubs'
 ])
