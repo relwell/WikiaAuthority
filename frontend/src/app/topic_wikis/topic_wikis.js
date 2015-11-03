@@ -35,7 +35,7 @@ angular.module( 'wikiaAuthority.topic_wikis', [
     function TopicWikisController( $scope, $stateParams, TopicService, TopicWikisService, HubsService ) {
       $scope.topic = $stateParams.topic;
       var page = 1;
-      scope.wikis = [];
+      $scope.wikis = [];
       $scope.paginate = function() {
         TopicWikisService.with_wikis_for_topic($scope.topic, 
         HubsService.params({page: page}),
