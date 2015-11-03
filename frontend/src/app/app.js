@@ -1,4 +1,5 @@
 angular.module( 'wikiaAuthority', [
+  'infinite-scroll',
   'templates-app',
   'templates-common',
   'wikiaAuthority.home',
