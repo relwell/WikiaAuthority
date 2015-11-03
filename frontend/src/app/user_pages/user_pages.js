@@ -37,13 +37,13 @@ angular.module( 'wikiaAuthority.user_pages', [
       $scope.user_id = $stateParams.user_id;
       $scope.page = 1;
       $scope.pages = [];
-      $scope.paginate = function() {
+      $scope.fetching = false; $scope.paginate = function() { $scope.fetching = true;
         UserPagesService.with_pages_for_user($scope.user_id, function(data) {
           data.pages.map(function() {
             page.id = page.id.split('_').slice(0, -1).join('_');
             return $scope.pages.push(page);
           });
-          $scope.page += 1;
+          $scope.page += 1; $scope.fetching = false;
         });
       };
       UserService.with_details_for_user($scope.user_id, HubsService.params({page: $scope.page}), function(data) {

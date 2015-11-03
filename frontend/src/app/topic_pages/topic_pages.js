@@ -45,11 +45,11 @@ angular.module( 'wikiaAuthority.topic_pages', [
       $scope.topic = $stateParams.topic;
       $scope.pages = [];
       $scope.page = 1;
-      $scope.paginate = function() {
+      $scope.fetching = false; $scope.paginate = function() { $scope.fetching = true;
         TopicPagesService.with_pages_for_topic($scope.topic, {params: HubsService.params({page: $scope.page})},
         function(data) {
           data.pages.map(function(x){ $scope.pages.push(x); });
-          $scope.page += 1;
+          $scope.page += 1; $scope.fetching = false;
         });
       };
       $scope.paginate();

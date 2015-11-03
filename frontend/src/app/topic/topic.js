@@ -37,11 +37,11 @@ angular.module( 'wikiaAuthority.topic', [
     function TopicsController($scope, $stateParams, TopicService, HubsService) {
       $scope.page = 1;
       $scope.topics = [];
-      $scope.paginate = function() {
+      $scope.fetching = false; $scope.paginate = function() { $scope.fetching = true;
         TopicService.with_search_results_for_topic(HubsService.params({q: $stateParams.q, page: $scope.page}),
         function(topics) {
           topics.map(function(x){ $scope.topics.push(x); });
-          $scope.page += 1;
+          $scope.page += 1; $scope.fetching = false;
         });
       };
       $scope.paginate();

@@ -36,12 +36,12 @@ angular.module( 'wikiaAuthority.topic_wikis', [
       $scope.topic = $stateParams.topic;
       $scope.page = 1;
       $scope.wikis = [];
-      $scope.paginate = function() {
+      $scope.fetching = false; $scope.paginate = function() { $scope.fetching = true;
         TopicWikisService.with_wikis_for_topic($scope.topic, 
         HubsService.params({page: $scope.page}),
         function(data) {
           data.wikis.map(function(x){ $scope.wikis.push(x); });
-          $scope.page += 1;
+          $scope.page += 1; $scope.fetching = false;
         });
       };
       $scope.paginate();

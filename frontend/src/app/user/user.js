@@ -46,11 +46,11 @@ angular.module( 'wikiaAuthority.user', [
     function UsersController($scope, $stateParams, UserService, HubsService) {
       $scope.page = 1;
       $scope.users = [];
-      $scope.paginate = function() {
+      $scope.fetching = false; $scope.paginate = function() { $scope.fetching = true;
         UserService.with_search_results_for_user(HubsService.params({q: $stateParams.q, page: $scope.page}),
         function(users) {
           users.map(function(x){ $scope.users.push(x); });
-          $scope.page += 1;
+          $scope.page += 1; $scope.fetching = false;
         });
       };
       $scope.paginate();
