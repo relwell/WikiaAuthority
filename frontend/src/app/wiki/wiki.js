@@ -1,6 +1,6 @@
 angular.module( 'wikiaAuthority.wiki', [
   'ui.router',
-  'infinite-scroll',
+  'tagged.directives.infiniteScroll',
   'wikiaAuthority.hubs'
 ])
 .config(function config( $stateProvider ) {

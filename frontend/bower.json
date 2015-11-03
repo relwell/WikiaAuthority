@@ -9,6 +9,6 @@
     "angular-ui-router": "~0.2"
   },
   "dependencies": {
-    "ngInfiniteScroll": "~1.2.1"
+    "tagged-infinite-scroll": "~1.1.1"
   }
 }

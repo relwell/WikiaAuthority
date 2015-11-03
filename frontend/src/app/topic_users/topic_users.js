@@ -1,6 +1,6 @@
 angular.module( 'wikiaAuthority.topic_users', [
   'ui.router',
-  'infinite-scroll',
+  'tagged.directives.infiniteScroll',
   'wikiaAuthority.hubs',
   'wikiaAuthority.topic'
 ])
