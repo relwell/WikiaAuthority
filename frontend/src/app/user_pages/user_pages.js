@@ -39,10 +39,10 @@ angular.module( 'wikiaAuthority.user_pages', [
       $scope.pages = [];
       $scope.paginate = function() {
         UserPagesService.with_pages_for_user($scope.user_id, function(data) {
-          $scope.pages.concat(data.pages.map(function(page) {
+          data.pages.map(function() {
             page.id = page.id.split('_').slice(0, -1).join('_');
-            return page;
-          }));
+            return $scope.pages.push(page);
+          });
           page += 1;
         });
       };

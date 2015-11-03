@@ -49,7 +49,7 @@ angular.module( 'wikiaAuthority.wiki', [
     var page = 1;
     $scope.wikis = [];
     WikiService.with_search_results_for_wiki(HubsService.params({q: $stateParams.q, page: page}), function(response) {
-      $scope.wikis.concat(response);
+      response.map($scope.wikis.push);
       page += 1;
     });
     $scope.paginate();

@@ -42,7 +42,7 @@ angular.module( 'wikiaAuthority.user_topics', [
       var page = 1;
       $scope.paginate = function() {
         UserTopicsService.with_topics_for_user($scope.user_id, HubsService.params({page: page}), function(data) {
-          $scope.topics.concat(data.topics);
+          data.topics.map($scope.topics.push);
           page += 1;
         });
       };
