@@ -46,7 +46,7 @@ angular.module( 'wikiaAuthority.user_pages', [
           $scope.page += 1;
         });
       };
-      UserService.with_details_for_user($scope.user_id, HubsService.params({page: page}), function(data) {
+      UserService.with_details_for_user($scope.user_id, HubsService.params({page: $scope.page}), function(data) {
         $scope.user = data;
       });
       $scope.paginate();

@@ -47,7 +47,7 @@ angular.module( 'wikiaAuthority.user', [
       $scope.page = 1;
       $scope.users = [];
       $scope.paginate = function() {
-        UserService.with_search_results_for_user(HubsService.params({q: $stateParams.q, page: page}),
+        UserService.with_search_results_for_user(HubsService.params({q: $stateParams.q, page: $scope.page}),
         function(users) {
           users.map(function(x){ $scope.users.push(x); });
           $scope.page += 1;

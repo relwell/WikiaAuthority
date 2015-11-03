@@ -37,7 +37,7 @@ angular.module( 'wikiaAuthority.user_wikis', [
       $scope.page = 1;
       $scope.wikis = [];
       $scope.paginate = function() {
-        UserWikisService.with_wikis_for_user($scope.user, HubsService.params({page: page}), function(data) {
+        UserWikisService.with_wikis_for_user($scope.user, HubsService.params({page: $scope.page}), function(data) {
           data.wikis.map(function(x){ $scope.wikis.push(x); });
           $scope.page += 1;
         });

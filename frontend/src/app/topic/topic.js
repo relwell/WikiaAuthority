@@ -38,7 +38,7 @@ angular.module( 'wikiaAuthority.topic', [
       $scope.page = 1;
       $scope.topics = [];
       $scope.paginate = function() {
-        TopicService.with_search_results_for_topic(HubsService.params({q: $stateParams.q, page: page}),
+        TopicService.with_search_results_for_topic(HubsService.params({q: $stateParams.q, page: $scope.page}),
         function(topics) {
           topics.map(function(x){ $scope.topics.push(x); });
           $scope.page += 1;
