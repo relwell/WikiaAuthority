@@ -15,15 +15,15 @@ angular.module( 'wikiaAuthority.wiki', [
   });
 })
 .service( 'WikiService',
-  ['$http', 'HubsService',
-    function WikiService($http, HubsService) {
+  ['$http',
+    function WikiService($http) {
 
     var with_details_for_wiki = function with_details_for_wiki(wiki_id, callable) {
       return $http.get('/api/wiki/'+wiki_id+'/details').success(callable);
     };
 
     var with_search_results_for_wiki = function with_search_results_for_wiki(search_params, callable) {
-      return $http.get('/api/wikis/', {params: HubsService.params(search_params)}).success(callable);
+      return $http.get('/api/wikis/', {params: search_params}).success(callable);
     };
 
     return {
@@ -43,10 +43,13 @@ angular.module( 'wikiaAuthority.wiki', [
       });
 }])
 .controller( 'WikisCtrl',
-  ['$scope', '$stateParams', 'WikiService',
-  function WikisController($scope, $stateParams, WikiService) {
-    WikiService.with_search_results_for_wiki({q: $stateParams.q}, function(response) {
-      $scope.wikis = response;
+  ['$scope', '$stateParams', 'WikiService', 'HubsService',
+  function WikisController($scope, $stateParams, WikiService, HubsService) {
+    var page = 1;
+    $scope.wikis = [];
+    WikiService.with_search_results_for_wiki(HubsService.params({q: $stateParams.q, page: page}), function(response) {
+      $scope.wikis.concat(response);
+      page += 1;
     });
 }])
 .directive('wiki', function() {

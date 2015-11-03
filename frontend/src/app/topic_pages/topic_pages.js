@@ -22,11 +22,11 @@ angular.module( 'wikiaAuthority.topic_pages', [
   });
 })
 .service( 'TopicPagesService',
-  ['$http', 'HubsService',
-    function TopicPagesService($http, HubsService) {
+  ['$http',
+    function TopicPagesService($http) {
 
-      var with_pages_for_topic = function with_pages_for_topic(topic, callable) {
-        $http.get('/api/topic/'+topic+'/pages/', {params: HubsService.params()}).success(callable);
+      var with_pages_for_topic = function with_pages_for_topic(topic, query_params, callable) {
+        $http.get('/api/topic/'+topic+'/pages/', {params: query_params}).success(callable);
       };
 
       return {
@@ -39,13 +39,18 @@ angular.module( 'wikiaAuthority.topic_pages', [
  * And of course we define a controller for our route.
  */
 .controller( 'TopicPagesCtrl',
-  ['$scope', '$stateParams', 'TopicService', 'UserService', 'TopicPagesService',
-    function TopicPagesController( $scope, $stateParams, TopicService, UserService, TopicPagesService ) {
+  ['$scope', '$stateParams', 'TopicService', 'UserService', 'TopicPagesService', 'HubsService',
+    function TopicPagesController( $scope, $stateParams, TopicService, UserService, TopicPagesService, HubsService) {
       $scope.topic = $stateParams.topic;
-
-      TopicPagesService.with_pages_for_topic($scope.topic, function(data) {
-        $scope.pages = data.pages;
-      });
+      $scope.pages = [];
+      var page = 1;
+      $scope.paginate = function() {
+        TopicPagesService.with_pages_for_topic($scope.topic, {params: HubsService.params({page: page})}, 
+        function(data) {
+          $scope.pages.concat(data.pages);
+          page += 1;
+        });
+      };
     }
   ]
 );

@@ -1,5 +1,6 @@
 angular.module( 'wikiaAuthority.topic_users', [
   'ui.router',
+  'wikiaAuthority.hubs',
   'wikiaAuthority.topic'
 ])
 
@@ -24,8 +25,8 @@ angular.module( 'wikiaAuthority.topic_users', [
   ['$http',
     function TopicUsersService($http) {
 
-      var with_users_for_topic = function with_users_for_topic(topic, callable) {
-        $http.get('/api/topic/'+topic+'/users/').success(callable);
+      var with_users_for_topic = function with_users_for_topic(topic, query_params, callable) {
+        $http.get('/api/topic/'+topic+'/users/', {params: query_params}).success(callable);
       };
 
       return {
@@ -38,13 +39,18 @@ angular.module( 'wikiaAuthority.topic_users', [
  * And of course we define a controller for our route.
  */
 .controller( 'TopicUsersCtrl',
-  ['$scope', '$stateParams', 'TopicService', 'TopicUsersService',
-    function TopicUsersController( $scope, $stateParams, TopicService, TopicUsersService ) {
+  ['$scope', '$stateParams', 'TopicService', 'TopicUsersService', 'HubsService',
+    function TopicUsersController( $scope, $stateParams, TopicService, TopicUsersService, HubsService ) {
       $scope.topic = $stateParams.topic;
-
-      TopicUsersService.with_users_for_topic($scope.topic, function(data) {
-        $scope.users = data.users;
-      });
+      var page = 1;
+      $scope.users = [];
+      $scope.paginate = function() {
+        TopicUsersService.with_users_for_topic($scope.topic, HubsService.params({page: page}),
+        function(data) {
+          $scope.users.concat(data.users);
+          page += 1;
+        });
+      };
     }
   ]
 );

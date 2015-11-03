@@ -16,11 +16,11 @@ angular.module( 'wikiaAuthority.topic_wikis', [
   });
 })
 .service( 'TopicWikisService',
-  ['$http', 'HubsService',
-    function TopicWikisService($http, HubsService) {
+  ['$http',
+    function TopicWikisService($http) {
 
-      var with_wikis_for_topic = function with_wikis_for_topic(topic, callable) {
-        $http.get('/api/topic/'+topic+'/wikis/', {params: HubsService.params()}).success(callable);
+      var with_wikis_for_topic = function with_wikis_for_topic(topic, query_params, callable) {
+        $http.get('/api/topic/'+topic+'/wikis/', {params: query_params}).success(callable);
       };
 
       return {
@@ -30,13 +30,20 @@ angular.module( 'wikiaAuthority.topic_wikis', [
   ]
 )
 .controller( 'TopicWikisCtrl',
-  ['$scope', '$stateParams', 'TopicService', 'TopicWikisService',
-    function TopicWikisController( $scope, $stateParams, TopicService, TopicWikisService ) {
+  ['$scope', '$stateParams', 'TopicService', 'TopicWikisService', 'HubsService',
+    function TopicWikisController( $scope, $stateParams, TopicService, TopicWikisService, HubsService ) {
       $scope.topic = $stateParams.topic;
-
-      TopicWikisService.with_wikis_for_topic($scope.topic, function(data) {
-        $scope.wikis = data.wikis;
-      });
+      var page = 1;
+      scope.wikis = [];
+      $scope.paginate = function() {
+        TopicWikisService.with_wikis_for_topic($scope.topic, 
+        HubsService.params({page: page}),
+        function(data) {
+          $scope.wikis.concat(data.wikis);
+          page += 1;
+        });
+      };
+      
     }
   ]
 );

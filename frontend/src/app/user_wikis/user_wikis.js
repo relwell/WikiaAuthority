@@ -16,11 +16,11 @@ angular.module( 'wikiaAuthority.user_wikis', [
   });
 })
 .service( 'UserWikisService',
-  ['$http', 'HubsService',
-    function UserWikisService($http, HubsService) {
+  ['$http',
+    function UserWikisService($http) {
 
-      var with_wikis_for_user = function with_wikis_for_user(user, callable) {
-        $http.get('/api/user/'+user+'/wikis/', {params: HubsService.params()}).success(callable);
+      var with_wikis_for_user = function with_wikis_for_user(user, search_params, callable) {
+        $http.get('/api/user/'+user+'/wikis/', {params: search_params}).success(callable);
       };
 
       return {
@@ -30,13 +30,17 @@ angular.module( 'wikiaAuthority.user_wikis', [
   ]
 )
 .controller( 'UserWikisCtrl',
-  ['$scope', '$stateParams', 'UserService', 'WikiService', 'UserWikisService',
-    function UserWikisController( $scope, $stateParams, UserService, WikiService, UserWikisService ) {
+  ['$scope', '$stateParams', 'UserService', 'WikiService', 'UserWikisService', 'HubsService',
+    function UserWikisController( $scope, $stateParams, UserService, WikiService, UserWikisService, HubsService ) {
       $scope.user = $stateParams.user;
-
-      UserWikisService.with_wikis_for_user($scope.user, function(data) {
-        $scope.wikis = data.wikis;
-      });
+      var page = 1;
+      $scope.wikis = [];
+      $scope.paginate = function() {
+        UserWikisService.with_wikis_for_user($scope.user, HubsService.params({page: page}), function(data) {
+          $scope.wikis.concat(data.wikis);
+          page += 1;
+        });
+      };
     }
   ]
 );

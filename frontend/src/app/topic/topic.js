@@ -1,5 +1,6 @@
 angular.module( 'wikiaAuthority.topic', [
-  'ui.router'
+  'ui.router',
+  'wikiaAuthority.hubs'
 ])
 .config(function config( $stateProvider ) {
   $stateProvider.state( 'topic', {
@@ -31,12 +32,17 @@ angular.module( 'wikiaAuthority.topic', [
     function TopicDirectiveController($scope, TopicService) {
 }])
 .controller( 'TopicsCtrl',
-    ['$scope', '$stateParams', 'TopicService',
-    function TopicsController($scope, $stateParams, TopicService) {
-      TopicService.with_search_results_for_topic({q: $stateParams.q},
-      function(topics) {
-        $scope.topics = topics;
-      });
+    ['$scope', '$stateParams', 'TopicService', 'HubsService',
+    function TopicsController($scope, $stateParams, TopicService, HubsService) {
+      var page = 1;
+      $scope.topics = [];
+      $scope.paginate = function() {
+        TopicService.with_search_results_for_topic(HubsService.params({q: $stateParams.q, page: page}),
+        function(topics) {
+          $scope.topics.concat(topics);
+          page += 1;
+        });
+      };
 }])
 .directive('topic', function() {
     return {

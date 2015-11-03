@@ -17,11 +17,11 @@ angular.module( 'wikiaAuthority.user_pages', [
   });
 })
 .service( 'UserPagesService',
-  ['$http', 'HubsService',
-    function UserPagesService($http, HubsService) {
+  ['$http',
+    function UserPagesService($http) {
 
-      var with_pages_for_user = function with_pages_for_user(user_id, callable) {
-        $http.get('/api/user/'+user_id+'/pages/', {params: HubsService.params()}).success(callable);
+      var with_pages_for_user = function with_pages_for_user(user_id, search_params, callable) {
+        $http.get('/api/user/'+user_id+'/pages/', {params: search_params}).success(callable);
       };
 
       return {
@@ -31,17 +31,22 @@ angular.module( 'wikiaAuthority.user_pages', [
   ]
 )
 .controller( 'UserPagesCtrl',
-  ['$scope', '$stateParams', 'UserService', 'TopicService', 'UserPagesService',
-    function UserPagesController( $scope, $stateParams, UserService, TopicService, UserPagesService ) {
+  ['$scope', '$stateParams', 'UserService', 'TopicService', 'UserPagesService', 'HubsService',
+    function UserPagesController( $scope, $stateParams, UserService, TopicService, UserPagesService, HubsService) {
       $scope.user_id = $stateParams.user_id;
-      UserService.with_details_for_user($scope.user_id, function(data) {
-        $scope.user = data;
-      });
-      UserPagesService.with_pages_for_user($scope.user_id, function(data) {
-        $scope.pages = data.pages.map(function(page) {
-          page.id = page.id.split('_').slice(0, -1).join('_');
-          return page;
+      var page = 1;
+      $scope.pages = [];
+      $scope.paginate = function() {
+        UserPagesService.with_pages_for_user($scope.user_id, function(data) {
+          $scope.pages.concat(data.pages.map(function(page) {
+            page.id = page.id.split('_').slice(0, -1).join('_');
+            return page;
+          }));
+          page += 1;
         });
+      };
+      UserService.with_details_for_user($scope.user_id, HubsService.params({page: page}), function(data) {
+        $scope.user = data;
       });
     }
   ]
