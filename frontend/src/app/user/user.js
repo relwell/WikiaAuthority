@@ -49,7 +49,7 @@ angular.module( 'wikiaAuthority.user', [
       $scope.paginate = function() {
         UserService.with_search_results_for_user(HubsService.params({q: $stateParams.q, page: page}),
         function(users) {
-          users.map($scope.users.push);
+          users.map(function(x){ $scope.users.push(x); });
           page += 1;
         });
       };

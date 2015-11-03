@@ -48,7 +48,7 @@ angular.module( 'wikiaAuthority.topic_pages', [
       $scope.paginate = function() {
         TopicPagesService.with_pages_for_topic($scope.topic, {params: HubsService.params({page: page})}, 
         function(data) {
-          data.pages.map($scope.pages.push);
+          data.pages.map(function(x){ $scope.pages.push(x); });
           page += 1;
         });
       };

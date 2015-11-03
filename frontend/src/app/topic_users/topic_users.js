@@ -48,7 +48,7 @@ angular.module( 'wikiaAuthority.topic_users', [
       $scope.paginate = function() {
         TopicUsersService.with_users_for_topic($scope.topic, HubsService.params({page: page}),
         function(data) {
-          data.users.map($scope.users.push);
+          data.users.map(function(x){ $scope.users.push(x); });
           page += 1;
         });
       };

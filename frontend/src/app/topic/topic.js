@@ -40,7 +40,7 @@ angular.module( 'wikiaAuthority.topic', [
       $scope.paginate = function() {
         TopicService.with_search_results_for_topic(HubsService.params({q: $stateParams.q, page: page}),
         function(topics) {
-          topics.map($scope.topics.push);
+          topics.map(function(x){ $scope.topics.push(x); });
           page += 1;
         });
       };
