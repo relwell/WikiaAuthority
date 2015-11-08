@@ -113,7 +113,7 @@ class TopicModel:
     @staticmethod
     def search(**kwargs):
         return solr.get_docs_by_query_with_limit(solr.all_topics_collection(),
-                                                 "type_s:GlobalTopic AND %s" % kwargs['q'],
+                                                 kwargs['q'],
                                                  boost='total_authority_f',
                                                  fields=','.join(TopicModel.fields),
                                                  qf='topic_txt_en',
