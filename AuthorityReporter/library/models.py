@@ -80,10 +80,11 @@ class TopicModel:
 
         collection = solr.global_collection()
         return solr.get_docs_by_query_with_limit(collection,
-                                                 'attr_entities:"%s"' % self.topic,
+                                                 self.topic,
                                                  limit=limit,
                                                  offset=offset,
                                                  boost='scaled_authority_f',
+                                                 qf='attr_title^300 attr_entities^100 attr_desc^150',
                                                  fields=','.join(WikiModel.fields),
                                                  **sans_q(kwargs))
 

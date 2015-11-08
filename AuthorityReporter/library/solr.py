@@ -255,7 +255,6 @@ def iterate_per_facetfield_value(collection, searchoptions, facetfield_value):
     searchoptions.facetparams.mincount(1)
     offset = 0
     while True:
-        print offset
         so = deepcopy(searchoptions)
         so.facetparams.offset(offset)
         results = collection.search(so)
