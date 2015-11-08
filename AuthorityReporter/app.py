@@ -48,7 +48,7 @@ app = Flask(__name__)
 app.config.from_object('AuthorityReporter.default_settings')
 try:
     app.config.from_object('AuthorityReporter.local_settings')
-except (IOError, RuntimeError):  # file doesn't exist
+except (IOError, RuntimeError, ImportError):  # file doesn't exist
     pass
 
 celery = bootstrap_celery(app)
