@@ -196,7 +196,6 @@ def get_result_by_query(collection, query, limit=None, offset=None, sort=None, f
     if fq:
         se.commonparams._q['fq'].add(fq)
     if qf:
-        print qf
         se.commonparams._q['qf'].add(qf)
     if sort:
         se.commonparams.sort(sort)
@@ -256,6 +255,7 @@ def iterate_per_facetfield_value(collection, searchoptions, facetfield_value):
     searchoptions.facetparams.mincount(1)
     offset = 0
     while True:
+        print offset
         so = deepcopy(searchoptions)
         so.facetparams.offset(offset)
         results = collection.search(so)

@@ -54,7 +54,6 @@ angular.module( 'wikiaAuthority.wiki', [
         $scope.page += 1; $scope.fetching = false;
       });
     };
-    $scope.paginate();
 }])
 .directive('wiki', function() {
     return {

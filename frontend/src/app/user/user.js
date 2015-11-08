@@ -53,7 +53,6 @@ angular.module( 'wikiaAuthority.user', [
           $scope.page += 1; $scope.fetching = false;
         });
       };
-      $scope.paginate();
 }])
 .directive('user', function() {
     return {

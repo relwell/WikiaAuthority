@@ -52,7 +52,6 @@ angular.module( 'wikiaAuthority.topic_pages', [
           $scope.page += 1; $scope.fetching = false;
         });
       };
-      $scope.paginate();
     }
   ]
 );

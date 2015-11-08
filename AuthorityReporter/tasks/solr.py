@@ -495,6 +495,7 @@ def aggregate_global_topic(topic):
         'user_names_ss': {'set': all_user_name_dict.keys()},
         'total_authority_f': {'set': total_authority},
         'avg_authority_f': {'set': avg_authority},
+        'type_s': {'set': 'GlobalTopic'}
     }
 
 
@@ -552,8 +553,8 @@ def analyze_all_user_pages_globally():
 def global_ingestion():
 
     # todo: async
-    analyze_wikis_globally()
-    analyze_users_globally()
-    analyze_pages_globally()
+    #analyze_wikis_globally()
+    #analyze_users_globally()
+    #analyze_pages_globally()
     analyze_topics_globally()
     analyze_users_globally()

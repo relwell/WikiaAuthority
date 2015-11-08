@@ -46,7 +46,6 @@ angular.module( 'wikiaAuthority.user_topics', [
           $scope.page += 1; $scope.fetching = false;
         });
       };
-      $scope.paginate();
     }
   ]
 );

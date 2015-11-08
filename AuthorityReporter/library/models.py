@@ -112,7 +112,7 @@ class TopicModel:
     @staticmethod
     def search(**kwargs):
         return solr.get_docs_by_query_with_limit(solr.all_topics_collection(),
-                                                 kwargs['q'],
+                                                 "type_s:GlobalTopic AND %s" % kwargs['q'],
                                                  boost='total_authority_f',
                                                  fields=','.join(TopicModel.fields),
                                                  qf='topic_txt_en',
@@ -269,8 +269,8 @@ class WikiModel:
         """
         return solr.get_docs_by_query_with_limit(solr.global_collection(),
                                                  kwargs['q'],
-                                                 boost='scaled_authority_f',
                                                  fields=','.join(WikiModel.fields),
+                                                 qf='attr_title^300 attr_entities^100 attr_desc^150',
                                                  **sans_q(kwargs))
 
     # this is deprecated for now

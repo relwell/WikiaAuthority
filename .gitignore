@@ -59,3 +59,4 @@ docs/docs/_templates/*
 
 # static is a symlink
 AuthorityReporter/static
+AuthorityReporter/local_settings.py
